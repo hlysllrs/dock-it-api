@@ -12,7 +12,6 @@ exports.auth = async (req, res, next) => {
         if(!user || !user.isLoggedIn) {
             throw new Error()
         }
-        console.log(user)
         req.user = user
         next()
     } catch (error) {
@@ -36,7 +35,7 @@ exports.createUser = async (req, res) => {
 exports.showUser = async (req, res) => {
     try {
         const user = await User.findOne({ _id: req.params.id }) // 🟥 CAN I USE REQ.USER HERE INSTEAD SINCE AUTH WAS RUN FIRST??? 🟥
-        res.json({ user })
+        res.json(user)
     } catch (error) {
         res.status(400).json({ message: error.message })
     }
@@ -49,7 +48,7 @@ exports.updateUser = async (req, res) => {
         const user = await User.findOne({ _id: req.params.id }) // 🟥 CAN I USE REQ.USER HERE INSTEAD SINCE AUTH WAS RUN FIRST??? 🟥
         updates.forEach(update => user[update] = req.body[update])
         await user.save()
-        res.json({ user })
+        res.json(user)
     } catch (error) {
         res.status(400).json({ message: error.message })
     }
@@ -89,7 +88,7 @@ exports.logoutUser = async (req, res) => {
         const user = req.user
         user.isLoggedIn = false
         await user.save()
-        res.json({ user })
+        res.json(user)
     } catch (error) {
         res.status(400).json({ message: error.message })
     }
