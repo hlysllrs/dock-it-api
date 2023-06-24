@@ -12,6 +12,7 @@ exports.auth = async (req, res, next) => {
         if(!user || !user.isLoggedIn) {
             throw new Error()
         }
+        console.log(user)
         req.user = user
         next()
     } catch (error) {
@@ -69,7 +70,7 @@ exports.deleteUser = async (req, res) => {
 exports.loginUser = async (req, res) => {
     try {
         const user = await User.findOne({ email: req.body.email })
-        if (!user || !await bcrypt.compare(`${req.body.password}${secret}`, user.password)) {
+        if (!user || !await bcrypt.compare(req.body.password, user.password)) {
             res.status(400).send('invalid user credentials')
         } else {
             const token = await user.generateAuthToken()
