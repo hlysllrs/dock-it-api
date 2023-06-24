@@ -19,11 +19,20 @@ const userSchema = new mongoose.Schema({
     projects: [{ type: mongoose.Types.ObjectId, ref: 'ProjectRole' }],
     tasks: [{ type: mongoose.Types.ObjectId, ref: 'Task' }], 
     isLoggedIn: { type: Boolean, default: false }
+}, {
+    // combine first and last name to get full name
+    virtuals: {
+        fullName: {
+            get() {
+                return `${this.firstName} ${this.lastName}`
+            }
+        }
+    }
 })
 
 userSchema.pre('save', async function(next) {
     if(this.isModified('password')) {
-        this.password = await bcrypt.hash(`${this.password}${secret}`, 8)
+        this.password = await bcrypt.hash(this.password, 8)
     }
     next()
 })
@@ -32,6 +41,16 @@ userSchema.methods.generateAuthToken = async function() {
     const token = jwt.sign({ _id: this._id }, secret)
     return token
 }
+
+userSchema.methods.showAllTeams = async function() {
+    const roles = []
+    // use .populate method to populate teams into teamroles into user
+    // then use reduce method to group teams by role
+    const teamsByRole = this.teams.reduce((acc, item) => {
+        // 🟥 ADD FUNCTION LOGIC HERE 🟥 
+    }, {admin: {teams: []}, leader: {teams: []}, member: {teams: []}})
+}
+
 
 const User = mongoose.model('User', userSchema)
 
