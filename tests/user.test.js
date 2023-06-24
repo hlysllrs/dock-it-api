@@ -54,9 +54,30 @@ describe('Test user endpoints', () => {
             .set('Authorization', `Bearer ${token}`)
 
         expect(response.statusCode).toBe(200)
-        expect(response.body.user.firstName).toEqual('Muffin')
-        expect(response.body.user.lastName).toEqual('Man')
-        expect(response.body.user.email).toEqual('doyouknowme@drurylane.com')
+        expect(response.body.firstName).toEqual('Muffin')
+        expect(response.body.lastName).toEqual('Man')
+        expect(response.body.email).toEqual('doyouknowme@drurylane.com')
+    })
+
+    test('It should update a user', async () => {
+        const user = new User({
+            firstName: 'Snow',
+            lastName: 'White',
+            email: 'mirrormirror@onthewall.com',
+            password: 'fairestofthemall',
+            isLoggedIn: true
+        })
+        await user.save()
+        const token = await user.generateAuthToken()
+
+        const response = await request(app)
+            .put(`/users/${user._id}`)
+            .set('Authorization', `Bearer ${token}`)
+            .send({ firstName: 'Evil', lastName: 'Queen'})
+        
+        expect(response.statusCode).toBe(200)
+        expect(response.body.firstName).toEqual('Evil')
+        expect(response.body.lastName).toEqual('Queen')
     })
 
     test('It should delete a user', async () => {
@@ -116,6 +137,6 @@ describe('Test user endpoints', () => {
             .set('Authorization', `Bearer ${token}`)
 
         expect(response.statusCode).toBe(200)
-        expect(response.body.user.isLoggedIn).toEqual(false)
+        expect(response.body.isLoggedIn).toEqual(false)
     })
 })
