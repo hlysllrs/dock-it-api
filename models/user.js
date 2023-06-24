@@ -1,7 +1,7 @@
 const mongoose = require('mongoose')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
-const secret = process.env.SECREY_KEY
+const secret = process.env.SECRET_KEY
 
 const userSchema = new mongoose.Schema({
     firstName: { type: String, required: true, trim: true },
@@ -12,17 +12,18 @@ const userSchema = new mongoose.Schema({
         lowercase: true, 
         trim: true, 
         unique: true
-        //  ADD EMAIL ADDRESS VALIDATION HERE
+        // 🟥 ADD EMAIL ADDRESS VALIDATION HERE 🟥 
     },
-    password: { type: String, required: true, minLength: 8 },
-    teams: [{ type: mongoose.Types.ObjectId, ref: 'Team'}],
-    projects: [{ type: mongoose.Types.ObjectId, ref: 'Project'}],
-    tasks: [{ type: mongoose.Types.ObjectId, ref: 'Task'}]
+    password: { type: String, required: true, minLength: 8 }, // 🟥 ADD CHARACTER TYPE REQUIREMENTS??? 🟥 
+    teams: [{ type: mongoose.Types.ObjectId, ref: 'Team' }],
+    projects: [{ type: mongoose.Types.ObjectId, ref: 'Project' }],
+    tasks: [{ type: mongoose.Types.ObjectId, ref: 'Task' }], 
+    isLoggedIn: { type: Boolean, default: false }
 })
 
 userSchema.pre('save', async function(next) {
     if(this.isModified('password')) {
-        this.password = await bcrypt.hash(`${this.passoword}${secret}`, 8)
+        this.password = await bcrypt.hash(`${this.password}${secret}`, 8)
     }
     next()
 })
