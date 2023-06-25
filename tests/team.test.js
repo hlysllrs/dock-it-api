@@ -22,6 +22,7 @@ afterAll(async () => {
 
 describe('Test team endpoints', () => {
     test('It should create a team', async () => {
+        // create a logged in user and a token
         const user = new User({
             firstName: 'test1',
             lastName: 'test1',
@@ -32,6 +33,7 @@ describe('Test team endpoints', () => {
         await user.save()
         const token = await user.generateAuthToken()
 
+        // send request with authorization and team info
         const response = await request(app)
             .post('/teams')
             .set('Authorization', `Bearer ${token}`)
