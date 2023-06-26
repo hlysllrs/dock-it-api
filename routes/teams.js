@@ -7,7 +7,7 @@ const userCtrl = require('../controllers/users')
 router.post('/', userCtrl.auth, teamCtrl.createTeam)
 
 // add member to a team
-router.post('/addmember/:id', userCtrl.auth, teamCtrl.checkRole, teamCtrl.addTeamMember)
+router.put('/addmember/:id', userCtrl.auth, teamCtrl.checkRole, teamCtrl.addTeamMember)
 
 // update team info
 router.put('/:id', userCtrl.auth, teamCtrl.checkRole, teamCtrl.updateTeam)

@@ -5,8 +5,13 @@ const projectSchema = new mongoose.Schema({
     description: String,
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },
-    contributors: [{ type: mongoose.Types.ObjectId, ref: 'User' }],
+    members: {
+        admin: [{ type: mongoose.Types.ObjectId, ref: 'User' }],
+        contributor: [{ type: mongoose.Types.ObjectId, ref: 'User' }]
+    },
     tasks: [{ type: mongoose.Types.ObjectId, ref: 'Task' }]
+}, {
+    timestmps: true
 })
 
 const Project = mongoose.model('Project', projectSchema)
