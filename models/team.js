@@ -12,6 +12,11 @@ const teamSchema = new mongoose.Schema({
     timestamps: true
 })
 
+teamSchema.methods.getUserRole = async function(user) {
+    if (this.members.admin.includes(user._id)) return 'admin'
+    if (this.members.contributor.includes(user._id)) return 'contributor'
+}
+
 const Team = mongoose.model('Team', teamSchema)
 
 module.exports = Team
