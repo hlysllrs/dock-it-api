@@ -7,10 +7,15 @@ const userCtrl = require('../controllers/users')
 router.post('/', userCtrl.auth, teamCtrl.createTeam)
 
 // add member to a team
-router.put('/addmember/:id', userCtrl.auth, teamCtrl.checkRole, teamCtrl.addTeamMember)
+router.put('/add/:id', userCtrl.auth, teamCtrl.checkAdmin, teamCtrl.addTeamMember)
+
+// // remove member from team
+router.put('/remove/:id', userCtrl.auth, teamCtrl.checkAdmin, teamCtrl.removeTeamMember)
 
 // update team info
-router.put('/:id', userCtrl.auth, teamCtrl.checkRole, teamCtrl.updateTeam)
+router.put('/:id', userCtrl.auth, teamCtrl.checkAdmin, teamCtrl.updateTeam)
 
+// delete team
+router.delete('/:id', userCtrl.auth, teamCtrl.checkAdmin, teamCtrl.deleteTeam)
 
 module.exports = router
