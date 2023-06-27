@@ -111,3 +111,14 @@ exports.deleteTeam = async (req, res) => {
         res.status(400).json({ message: error.message })
     }
 }
+
+exports.showTeam = async (req, res) => {
+    try {
+        // find team using req.params.id
+        const team = await Team.findOne({ _id: req.params.id })
+        team.populate() // 🟥 POPULATE TEAM MEMBERS FULL NAMES AND PROJECT TITLES 🟥
+        res.json(team)
+    } catch (error) {
+        res.status(400).json({ message: error.message })
+    }
+}
