@@ -49,4 +49,24 @@ describe('Test team endpoints', () => {
         expect(response.body.teamRole.team).toEqual(response.body.team._id)
         expect(response.body.user.teams).toContain(response.body.teamRole._id)
     })
+
+    // 🟥 FINISH THIS TEST 🟥
+    test('It should add a member to a team', async () => {
+        const user = await User.create({
+            firstName: 'test2',
+            lastName: 'test2',
+            email: '2@test.com',
+            password: 'testing123',
+            isLoggedIn: true
+        })
+
+        const token = await user.generateAuthToken()
+
+        const member = await User.create({
+            firstName: 'test3',
+            lastName: 'test3',
+            email: '3@test.com',
+            password: 'testing123',
+        })
+    })
 })

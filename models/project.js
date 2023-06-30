@@ -3,8 +3,15 @@ const mongoose = require('mongoose')
 const projectSchema = new mongoose.Schema({
     title: { type: String, required: true },
     description: String,
-    startDate: { type: Date, required: true },
+    type: { 
+        type: String, 
+        default: function() {
+        if (!this.team) return 'personal'
+        }
+    },
+    startDate: { type: Date, default: Date.now },
     endDate: { type: Date, required: true },
+    team: { type: mongoose.Types.ObjectId, ref: 'Team' },
     members: [{ type: mongoose.Types.ObjectId, ref: 'User' }],
     tasks: [{ type: mongoose.Types.ObjectId, ref: 'Task' }]
 }, {

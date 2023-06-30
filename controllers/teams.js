@@ -122,3 +122,9 @@ exports.showTeam = async (req, res) => {
         res.status(400).json({ message: error.message })
     }
 }
+
+// METHOD FOR CHANGIGN A MEMBER'S ROLE??
+
+// SHOW ALL A USER'S TEAMS
+
+// SHOW A LIST OF ALL EXISTING TEAMS??
