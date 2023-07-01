@@ -104,7 +104,7 @@ exports.updateTeam = async (req, res) => {
 // delete team
 exports.deleteTeam = async (req, res) => {
     try {
-        // find team using req.params.id
+        // find team using req.params.id and delete
         const team = await Team.findOneAndDelete({ _id: req.params.id })
         res.json({ message: `${team.title} deleted` })
     } catch (error) {
@@ -112,19 +112,45 @@ exports.deleteTeam = async (req, res) => {
     }
 }
 
-exports.showTeam = async (req, res) => {
+// show a team's info
+exports.showTeamProjects = async (req, res) => {
     try {
-        // find team using req.params.id
-        const team = await Team.findOne({ _id: req.params.id })
-        team.populate() // 🟥 POPULATE TEAM MEMBERS FULL NAMES AND PROJECT TITLES 🟥
+        // find team using req.params.id, then populate the team's projects
+        const team = await Team.findOne({ _id: req.params.id }).populate('projects').exec()
+        team.projects.populate('tasks', 'title dueDate status')
         res.json(team)
     } catch (error) {
         res.status(400).json({ message: error.message })
     }
 }
 
-// METHOD FOR CHANGIGN A MEMBER'S ROLE??
+// show team members
+exports.showTeamInfo = async (req, res) => {
+    try {
+        const team = await Team.findOne({ _id: req.params.id })
+            .populate('members', 'firstName lastName fullName')
+            .exec()
+        console.log(team)
+        res.json(team)
+    } catch (error) {
+        res.status(400).json({ message: error.message })
+    }
+}
 
-// SHOW ALL A USER'S TEAMS
+// show all of a user's teams
+exports.showAllTeams = async (req, res) => {
+    try {
+        const teamRoles = await TeamRole.find({ user: req.user._id })
+            .populate('team', 'title description projects')
+            .exec()
+        teamRoles.team.populate('projects', 'title startDate endDate tasks')
+        teamRoles.team.projects.populate('tasks', 'title dueDate assignedTo status')
+        teamRoles.team.projects.tasks.populate('assignedTo', 'firstName lastName fullName')
 
-// SHOW A LIST OF ALL EXISTING TEAMS??
+        res.json({ teamRoles })
+    } catch (error) {
+        res.status(400).json({ message: error.message })
+    }
+}
+
+// 🟥 METHOD FOR CHANGING A MEMBER'S ROLE?? 🟥
