@@ -20,16 +20,13 @@ const userSchema = new mongoose.Schema({
     tasks: [{ type: mongoose.Types.ObjectId, ref: 'Task' }], 
     isLoggedIn: { type: Boolean, default: false }
 }, {
-    // combine first and last name to get full name
-    virtuals: {
-        fullName: {
-            get() {
-                return `${this.firstName} ${this.lastName}`
-            }
-        }
-    }
-}, {
-    timestamps: true
+    timestamps: true,
+    toJSON: { virtuals: true }
+})
+
+// combine first and last name to get full name
+userSchema.virtual('fullName').get(function() {
+    return `${this.firstName} ${this.lastName}`
 })
 
 userSchema.pre('save', async function(next) {
