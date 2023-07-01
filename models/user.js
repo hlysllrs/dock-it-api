@@ -41,15 +41,6 @@ userSchema.methods.generateAuthToken = async function() {
     return token
 }
 
-// userSchema.methods.showAllTeams = async function() {
-//     const roles = []
-//     // use .populate method to populate teams into teamroles into user
-//     // then use reduce method to group teams by role
-//     const teamsByRole = this.teams.reduce((acc, item) => {
-//         // 🟥 ADD FUNCTION LOGIC HERE 🟥 
-//     }, {admin: {teams: []}, leader: {teams: []}, member: {teams: []}})
-// }
-
 const User = mongoose.model('User', userSchema)
 
 module.exports = User
