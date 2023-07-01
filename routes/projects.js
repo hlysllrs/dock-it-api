@@ -19,4 +19,10 @@ router.put('/:id', userCtrl.auth, projectCtrl.checkAdmin, projectCtrl.updateProj
 // delete project
 router.delete('/:id', userCtrl.auth, projectCtrl.checkAdmin, projectCtrl.deleteProject)
 
+// show a project
+router.get('/:id', userCtrl.auth, projectCtrl.showProject)
+
+// show all personal projects
+router.get('/', userCtrl.auth, projectCtrl.showPersonalProjects)
+
 module.exports = router

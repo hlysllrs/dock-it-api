@@ -3,6 +3,7 @@ const ProjectRole = require('../models/projectRole')
 const Project = require('../models/project')
 
 // check if user is a member of the given project
+// 🟥 WILL A PROJECT NEED TO HAVE MEMBERS??? 🟥
 exports.checkMember = async (req, res, next) => {
     try {
         const project = await Project.findOne({ _id: req.params.id })
@@ -46,6 +47,7 @@ exports.createProject= async (req, res) => {
     }
 }
 
+// 🟥 WILL A PROJECT NEED TO HAVE MEMBERS??? 🟥
 // add new project member - request contains new member's _id and role on the project. { _id: '[INSERT ID]', role: '[INSERT ROLE NAME]' }
 exports.addProjectMember = async (req, res) => {
     try {
@@ -90,11 +92,11 @@ exports.removeProjectMember = async (req, res) => {
 // update project details - title, description, start date, end date, etc.
 exports.updateProject = async (req, res) => {
     try {
-        // find team using req.params.id
+        // find project using req.params.id
         const project = await Project.findOne({ _id: req.params.id })
-        // make requested updates to team information
+        // make requested updates to project information
         const updates = Object.keys(req.body)
-        updates.forEach(update => team[update] = req.body[update])
+        updates.forEach(update => project[update] = req.body[update])
         await project.save()
         res.json(project)
     } catch (error) {
@@ -115,17 +117,31 @@ exports.deleteProject = async (req, res) => {
 
 exports.showProject = async (req, res) => {
     try {
-        // find team using req.params.id
+        // find project using req.params.id
         const project = await Project.findOne({ _id: req.params.id })
-        project.populate() // 🟥 POPULATE PROJECT MEMBERS FULL NAMES 🟥
+        // populate task details
+            .populate('tasks', 'title dueDate assignedTo status')
+            .exec()
+        // populate name of person task is assigned to 
+        project.tasks.populate('assignedTo', 'firstName lastName fullName')
         res.json(project)
     } catch (error) {
         res.status(400).json({ message: error.message })
     }
 }
 
-// METHOD FOR CHANGIGN A MEMBER'S ROLE??
+// show all of the user's personal projects
+exports.showPersonalProjects = async (req, res) => {
+    try {
+        // find all personal projects where user is a member
+        const projects = await Project.find({members: { contains: req.user.id }, type: 'personal'})
+        // populate task details
+        .populate('tasks', 'title dueDate assignedTo status')
+        .exec()
+        res.json({projects})
+    } catch (error) {
+        res.status(400).json({ message: error.message })
+    }
+}
 
-// SHOW ALL A USER'S PROJECTS
-
-// SHOW A LIST OF ALL EXISTING TEAM PROJECTS??
+// 🟥 METHOD FOR CHANGING A MEMBER'S ROLE?? 🟥
