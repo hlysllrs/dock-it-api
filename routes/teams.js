@@ -18,4 +18,13 @@ router.put('/:id', userCtrl.auth, teamCtrl.checkAdmin, teamCtrl.updateTeam)
 // delete team
 router.delete('/:id', userCtrl.auth, teamCtrl.checkAdmin, teamCtrl.deleteTeam)
 
+// show team details
+router.get('/:id', userCtrl.auth, teamCtrl.showTeamInfo)
+
+// show team projects
+router.get('/:id/projects', userCtrl.auth, teamCtrl.showTeamProjects)
+
+// show all user's teams
+router.get('/', userCtrl.auth, teamCtrl.showAllTeams)
+
 module.exports = router
