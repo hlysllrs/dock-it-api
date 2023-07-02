@@ -179,7 +179,7 @@ exports.deleteProject = async (req, res) => {
             team.save()
         }
         // find all project roles associated with the project
-        const projectRoles = await ProjectRoles.find({ project: project._id })
+        const projectRoles = await ProjectRole.find({ project: project._id })
         // remove associated project role from each member's projects array
         projectRoles.forEach(async (role) => {
             const member = await User.find({ _id: role.user })

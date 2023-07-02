@@ -1,6 +1,8 @@
 const User = require('../models/user')
 const TeamRole = require('../models/teamRole')
 const Team = require('../models/team')
+const ProjectRole = require('../models/projectRole')
+const Project = require('../models/project')
 
 // check if user is a member of the given team
 exports.checkMember = async (req, res, next) => {
@@ -102,10 +104,37 @@ exports.updateTeam = async (req, res) => {
 }
 
 // delete team
+// 🟥 ALSO NEED TO DELETE ANY REFERENCES TO THE TEAM AND ANY PROJECTS THE TEAM HAS 🟥
 exports.deleteTeam = async (req, res) => {
     try {
         // find team using req.params.id and delete
         const team = await Team.findOneAndDelete({ _id: req.params.id })
+        // find all team roles associated with the team
+        const teamRoles = await TeamRole.find({ team: team._id })
+        // remove associated team role from each member's projects array
+        teamRoles.forEach(async (role) => {
+            const member = await User.find({ _id: role.user })
+            member.teams.splice(member.teams.indexOf(role._id), 1)
+            await member.save()
+        })
+        // delete team roles
+        teamRoles.deleteMany()
+
+        // delete projects assigned to the team
+        const teamProjects = await Project.find({ team: team._id })
+        teamProjects.forEach(async (project) => {
+            // find all project roles associated with the project
+            const projectRoles = await ProjectRole.find({ project: project._id })
+            // remove associated project role from each member's projects array
+            projectRoles.forEach(async (role) => {
+                const member = await User.find({ _id: role.user })
+                member.projects.splice(member.projects.indexOf(role._id), 1)
+                await member.save()
+        })
+        // delete project roles
+        projectRoles.deleteMany()
+        })
+
         res.json({ message: `${team.title} deleted` })
     } catch (error) {
         res.status(400).json({ message: error.message })
