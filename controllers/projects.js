@@ -1,9 +1,14 @@
 const User = require('../models/user')
 const ProjectRole = require('../models/projectRole')
 const Project = require('../models/project')
+const Team = require('../models/team')
 
-// check if user is a member of the given project
-// 🟥 WILL A PROJECT NEED TO HAVE MEMBERS??? 🟥
+/**
+ * Checks if the user is a member of the project
+ * @method checkMember
+ * @description used to check if the user making the request is a member of the project before excecuting the next function in the route's callbacks
+ * @throws throws an error if the user is not a member of the project
+ */
 exports.checkMember = async (req, res, next) => {
     try {
         const project = await Project.findOne({ _id: req.params.id })
@@ -16,7 +21,12 @@ exports.checkMember = async (req, res, next) => {
     }
 }
 
-// check if user is an admin of the given project
+/**
+ * Checks if the user is an admin for the project
+ * @method checkAdmin
+ * @description used to check if the user making the request is an admin of the project before excecuting the next function in the route's callbacks
+ * @throws throws an error if the user is not a member of the project
+ */
 exports.checkAdmin = async (req, res, next) => {
     try {
         const userRole = await ProjectRole.findOne({ user: req.user._id, project: req.params.id })
@@ -29,7 +39,23 @@ exports.checkAdmin = async (req, res, next) => {
     }
 }
 
-// create a new project
+/**
+ * Create a new project
+ * @method createProject
+ * @description creates a new project
+ * 
+ * Request will contain: 
+ *  - title: (required) title of the project
+ *  - description: description of the project
+ *  - type: (required) type of project  
+ *      -- can be 'personal' or 'team'
+ *  - startDate: start date of the project  
+ *      -- defaults to Date.now
+ *  - endDate: (required) end date of the project
+ *  - team: ObjectId of the team the project is assigned to (only if project type is 'team')
+ * 
+ * The user will automatically be assigned to an admin role for the project created
+ */
 exports.createProject= async (req, res) => {
     try {
         // create project
@@ -41,14 +67,27 @@ exports.createProject= async (req, res) => {
         // add user to project's members array
         project.members.addToSet({ _id: req.user._id })
         await project.save()
+        if (project.type === 'team') {
+            const team = await Team.findOne({ _id: req.body.team })
+            team.projects.addToSet({ _id: project._id })
+            await team.save()
+        }
         res.json({ project, projectRole, user: req.user})
     } catch (error) {
         res.status(400).json({ message: error.message })
     }
 }
 
-// 🟥 WILL A PROJECT NEED TO HAVE MEMBERS??? 🟥
-// add new project member - request contains new member's _id and role on the project. { _id: '[INSERT ID]', role: '[INSERT ROLE NAME]' }
+/**
+ * Add a member to a project
+ * @method addProjectMember
+ * @description adds a member to the project specified by req.params.id
+ * 
+ * Request will contain: 
+ *  - member: (required) ObjectId of the user being added as a member to the project
+ *  - role: (required) desired role for the new member  
+ *      -- can either be 'admin' or 'contributor'
+ */
 exports.addProjectMember = async (req, res) => {
     try {
         // find project using req.params.id
@@ -68,7 +107,15 @@ exports.addProjectMember = async (req, res) => {
     }
 }
 
-// remove project member - request contains removed member's _id { _id: '[INSERT ID]' }
+
+/**
+ * Remove a member from a project
+ * @method removeProjectMember
+ * @description removes a member from the project specified by req.params.id
+ * 
+ * Request will contain: 
+ *  - member: (required) ObjectId of the user being added as a member to the project
+ */
 exports.removeProjectMember = async (req, res) => {
     try {
         // find project using req.params.id
@@ -89,7 +136,17 @@ exports.removeProjectMember = async (req, res) => {
     }
 }
 
-// update project details - title, description, start date, end date, etc.
+/**
+ * Update project details
+ * @method updateProject
+ * @description updates information of the project specified by req.params.id
+ * 
+ * Request may contain: 
+ *  - title: title of the project
+ *  - description: description of the project
+ *  - startDate: start date of the project
+ *  - endDate: end date of the project
+ */
 exports.updateProject = async (req, res) => {
     try {
         // find project using req.params.id
@@ -104,17 +161,45 @@ exports.updateProject = async (req, res) => {
     }
 }
 
-// delete project
+/**
+ * Delete project
+ * @method deleteProject
+ * @description deletes the project specified by req.params.id
+ * 
+ * Also removes the project reference from any teams or users it was assigned to and deleted associated projectRoles
+ */
 exports.deleteProject = async (req, res) => {
     try {
         // find project using req.params.id
         const project = await Project.findOneAndDelete({ _id: req.params.id })
+        // if project is a team project, remove from team's projects array
+        if(project.type === 'team') {
+            const team = await Team.findOne({ _id: project.team })
+            team.projects.splice(team.projects.indexOf(project._id), 1)
+            team.save()
+        }
+        // find all project roles associated with the project
+        const projectRoles = await ProjectRoles.find({ project: project._id })
+        // remove associated project role from each member's projects array
+        projectRoles.forEach(async (role) => {
+            const member = await User.find({ _id: role.user })
+            member.projects.splice(member.projects.indexOf(role._id), 1)
+            await member.save()
+        })
+        // delete project roles
+        projectRoles.deleteMany()
+
         res.json({ message: `${project.title} deleted` })
     } catch (error) {
         res.status(400).json({ message: error.message })
     }
 }
 
+/**
+ * Show a project
+ * @method showProject
+ * @description shows the project specified by req.params.id and populates associated task data
+ */
 exports.showProject = async (req, res) => {
     try {
         // find project using req.params.id
@@ -130,11 +215,15 @@ exports.showProject = async (req, res) => {
     }
 }
 
-// show all of the user's personal projects
+/**
+ * Show all personal projects
+ * @method showAllPersonalProjects
+ * @description shows all of a user's personal projects and populates associated task data
+ */
 exports.showPersonalProjects = async (req, res) => {
     try {
         // find all personal projects where user is a member
-        const projects = await Project.find({members: { contains: req.user.id }, type: 'personal'})
+        const projects = await Project.find({ members: { contains: req.user.id }, type: 'personal' })
         // populate task details
         .populate('tasks', 'title dueDate assignedTo status')
         .exec()

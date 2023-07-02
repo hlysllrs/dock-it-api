@@ -6,8 +6,9 @@ const projectSchema = new mongoose.Schema({
     type: { 
         type: String, 
         default: function() {
-        if (!this.team) return 'personal'
-        }, enum: ['personal', 'team']
+            if (!this.team) return 'personal'
+        }, 
+        enum: ['personal', 'team']
     },
     startDate: { type: Date, default: Date.now },
     endDate: { type: Date, required: true },
