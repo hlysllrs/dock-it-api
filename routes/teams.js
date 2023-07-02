@@ -19,7 +19,7 @@ router.put('/:id', userCtrl.auth, teamCtrl.checkAdmin, teamCtrl.updateTeam)
 router.delete('/:id', userCtrl.auth, teamCtrl.checkAdmin, teamCtrl.deleteTeam)
 
 // show team details
-router.get('/:id', userCtrl.auth, teamCtrl.showTeamInfo)
+router.get('/:id', userCtrl.auth, teamCtrl.showTeamDetails)
 
 // show team projects
 router.get('/:id/projects', userCtrl.auth, teamCtrl.showTeamProjects)

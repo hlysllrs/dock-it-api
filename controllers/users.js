@@ -58,6 +58,12 @@ exports.updateUser = async (req, res) => {
 exports.deleteUser = async (req, res) => {
     try {
         await req.user.deleteOne()
+
+          // 🟥 ALSO NEED TO DELETE ALL PERSONAL PROJECTS AND TASKS 🟥
+          // 🟥 NEED TO REMOVE ALL TEAM ROLES AND PROJECT ROLES 🟥
+          // 🟥 NEED TO REMOVE USER FROM ALL TEAMS AND TEAM PROJECTS 🟥
+          // 🟥 UPDATE ANY ASSIGNED TASKS TO BE UNASSIGNED 🟥
+
         res.json({ message: 'user deleted' })
     } catch (error) {
         res.status(400).json({ message: error.message })

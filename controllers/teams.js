@@ -4,7 +4,12 @@ const Team = require('../models/team')
 const ProjectRole = require('../models/projectRole')
 const Project = require('../models/project')
 
-// check if user is a member of the given team
+/**
+ * Checks if the user is a member of the given team
+ * @method checkMember
+ * @description used to check if the user making the request is a member of the team specified by `req.params.id` before excecuting the next function in the route's callbacks
+ * @throws throws an error if the user is not a member of the team
+ */
 exports.checkMember = async (req, res, next) => {
     try {
         const team = await Team.findOne({ _id: req.params.id })
@@ -17,7 +22,12 @@ exports.checkMember = async (req, res, next) => {
     }
 }
 
-// check if user is an admin of the given team
+/**
+ * Checks if the user is an admin for the given team
+ * @method checkAdmin
+ * @description used to check if the user making the request is an admin of the team specified by `req.params.id` before excecuting the next function in the route's callbacks
+ * @throws throws an error if the user is not an admin for the team
+ */
 exports.checkAdmin = async (req, res, next) => {
     try {
         const userRole = await TeamRole.findOne({ user: req.user._id, team: req.params.id })
@@ -30,7 +40,17 @@ exports.checkAdmin = async (req, res, next) => {
     }
 }
 
-// create a new team
+/**
+ * Create a new team
+ * @method createTeam
+ * @description creates a new team
+ * 
+ * Request will contain: 
+ *  - title: (required) title of the team
+ *  - description: description of the team
+ * 
+ * The user will automatically be assigned to an admin role for the team created
+ */
 exports.createTeam = async (req, res) => {
     try {
         // create team
@@ -47,7 +67,17 @@ exports.createTeam = async (req, res) => {
         res.status(400).json({ message: error.message })
     }
 }
-// add new team member - request contains new member's _id and role on the team. { _id: '[INSERT ID]', role: '[INSERT ROLE NAME]' }
+
+/**
+ * Add a member to the given team
+ * @method addTeamMember
+ * @description adds a member to the team specified by `req.params.id`
+ * 
+ * Request will contain: 
+ *  - member: (required) ObjectId of the user being added as a member to the team
+ *  - role: (required) desired role for the new member  
+ *      -- can either be 'admin' or 'contributor'
+ */
 exports.addTeamMember = async (req, res) => {
     try {
         // find team using req.params.id
@@ -67,7 +97,14 @@ exports.addTeamMember = async (req, res) => {
     }
 }
 
-// remove team member - request contains removed member's _id { _id: '[INSERT ID]' }
+/**
+ * Remove a member from the given team
+ * @method removeTeamMember
+ * @description removes a member from the team specified by `req.params.id`
+ * 
+ * Request will contain: 
+ *  - member: (required) ObjectId of the user being removed as a member of the team
+ */
 exports.removeTeamMember = async (req, res) => {
     try {
         // find team using req.params.id
@@ -82,13 +119,27 @@ exports.removeTeamMember = async (req, res) => {
         // remove deleted role from member's teams array
         member.teams.splice(member.teams.indexOf(memberRole._id), 1)
         member.save()
+
+        // 🟥 ALSO NEED TO REMOVE THE MEMBER FROM ALL ASSOCIATED PROJECTS AND TASKS 🟥
+
         res.json({ team, member })
     } catch (error) {
         res.status(400).json({ message: error.message })
     }
 }
 
-// update team details - title, description, etc.
+/**
+ * Update project details for the given team
+ * @method updateTeam
+ * @description updates information of the team specified by `req.params.id`
+ * 
+ * Request may contain: 
+ *  - title: title of the team
+ *  - description: description of the team
+ * 
+ * For making changes to the team's members array, please use the {@linkcode addTeamMember} or {@linkcode removeTeamMember} methods provided.  
+ * For making changes to the team's projects array, please use the {@linkcode updateProject} or {@linkcode deleteProject} methods provided in the project controllers.  
+ */
 exports.updateTeam = async (req, res) => {
     try {
         // find team using req.params.id
@@ -103,8 +154,13 @@ exports.updateTeam = async (req, res) => {
     }
 }
 
-// delete team
-// 🟥 ALSO NEED TO DELETE ANY REFERENCES TO THE TEAM AND ANY PROJECTS THE TEAM HAS 🟥
+/**
+ * Delete the given team
+ * @method deleteTeam
+ * @description deletes the team specified by `req.params.id`
+ * 
+ * Also removes the team reference from any users it was assigned to and deletes associated projects, projectRoles, and tasks for those projects
+ */
 exports.deleteTeam = async (req, res) => {
     try {
         // find team using req.params.id and delete
@@ -131,9 +187,12 @@ exports.deleteTeam = async (req, res) => {
                 member.projects.splice(member.projects.indexOf(role._id), 1)
                 await member.save()
         })
-        // delete project roles
-        projectRoles.deleteMany()
+            // delete project roles
+            projectRoles.deleteMany()
+
+            // 🟥 ALSO NEED TO DELETE ALL ASSOCIATED TASKS 🟥
         })
+
 
         res.json({ message: `${team.title} deleted` })
     } catch (error) {
@@ -153,13 +212,18 @@ exports.showTeamProjects = async (req, res) => {
     }
 }
 
-// show team members
-exports.showTeamInfo = async (req, res) => {
+/**
+ * Show the given team's details
+ * @method showTeamDetails
+ * @description shows the details for the team specified by `req.params.id`. Details shown include title, description, and members' names.
+ * 
+ * To view all of the team's projects, please use the {@linkcode showTeamProjects} method provided.
+ */
+exports.showTeamDetails = async (req, res) => {
     try {
         const team = await Team.findOne({ _id: req.params.id })
             .populate('members', 'firstName lastName fullName')
             .exec()
-        console.log(team)
         res.json(team)
     } catch (error) {
         res.status(400).json({ message: error.message })

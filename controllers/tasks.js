@@ -39,6 +39,10 @@ exports.deleteTask = async (req, res) => {
     try {
         // find task using req.params.id
         const task = await Task.findOneAndDelete({ _id: req.params.id })
+
+        // 🟥 NEED TO REMOVE TASK FROM ASSIGNED USER'S TASKS ARRAY 🟥
+        // 🟥 NEED TO REMOVE TASK FROM ASSOCIATED PROJECT'S TASKS ARRAY 🟥
+
         res.json({ message: `${task.title} deleted` })
     } catch (error) {
         res.status(400).json({ message: error.message })

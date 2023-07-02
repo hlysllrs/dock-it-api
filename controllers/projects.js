@@ -4,9 +4,9 @@ const Project = require('../models/project')
 const Team = require('../models/team')
 
 /**
- * Checks if the user is a member of the project
+ * Checks if the user is a member of the given project
  * @method checkMember
- * @description used to check if the user making the request is a member of the project before excecuting the next function in the route's callbacks
+ * @description used to check if the user making the request is a member of the project specified by `req.params.id` before excecuting the next function in the route's callbacks
  * @throws throws an error if the user is not a member of the project
  */
 exports.checkMember = async (req, res, next) => {
@@ -22,10 +22,10 @@ exports.checkMember = async (req, res, next) => {
 }
 
 /**
- * Checks if the user is an admin for the project
+ * Checks if the user is an admin for the given project
  * @method checkAdmin
- * @description used to check if the user making the request is an admin of the project before excecuting the next function in the route's callbacks
- * @throws throws an error if the user is not a member of the project
+ * @description used to check if the user making the request is an admin of the project specified by `req.params.id` before excecuting the next function in the route's callbacks
+ * @throws throws an error if the user is not an admin for the project
  */
 exports.checkAdmin = async (req, res, next) => {
     try {
@@ -50,7 +50,7 @@ exports.checkAdmin = async (req, res, next) => {
  *  - type: (required) type of project  
  *      -- can be 'personal' or 'team'
  *  - startDate: start date of the project  
- *      -- defaults to Date.now
+ *      -- defaults to `Date.now`
  *  - endDate: (required) end date of the project
  *  - team: ObjectId of the team the project is assigned to (only if project type is 'team')
  * 
@@ -79,9 +79,9 @@ exports.createProject= async (req, res) => {
 }
 
 /**
- * Add a member to a project
+ * Add a member to the given project
  * @method addProjectMember
- * @description adds a member to the project specified by req.params.id
+ * @description adds a member to the project specified by `req.params.id`
  * 
  * Request will contain: 
  *  - member: (required) ObjectId of the user being added as a member to the project
@@ -107,14 +107,13 @@ exports.addProjectMember = async (req, res) => {
     }
 }
 
-
 /**
- * Remove a member from a project
+ * Remove a member from the given project
  * @method removeProjectMember
- * @description removes a member from the project specified by req.params.id
+ * @description removes a member from the project specified by `req.params.id`
  * 
  * Request will contain: 
- *  - member: (required) ObjectId of the user being added as a member to the project
+ *  - member: (required) ObjectId of the user being removed as a member of the project
  */
 exports.removeProjectMember = async (req, res) => {
     try {
@@ -130,6 +129,9 @@ exports.removeProjectMember = async (req, res) => {
         // remove deleted role from member's projects array
         member.projects.splice(member.projects.indexOf(memberRole._id), 1)
         member.save()
+
+        // 🟥 ALSO NEED TO REMOVE THE MEMBER FROM ALL ASSOCIATED TASKS 🟥
+
         res.json({ project, member })
     } catch (error) {
         res.status(400).json({ message: error.message })
@@ -137,15 +139,18 @@ exports.removeProjectMember = async (req, res) => {
 }
 
 /**
- * Update project details
+ * Update project details for the given project
  * @method updateProject
- * @description updates information of the project specified by req.params.id
+ * @description updates information of the project specified by `req.params.id`
  * 
  * Request may contain: 
  *  - title: title of the project
  *  - description: description of the project
  *  - startDate: start date of the project
  *  - endDate: end date of the project
+ * 
+ * For making changes to the project's members array, please use the {@linkcode addProjectMember} and {@linkcode removProjectMember} methods provided.  
+ * For making changes to the project's tasks array, please use the {@linkcode updateTask} or {@linkcode deleteTask} methods provided in the task controllers.  
  */
 exports.updateProject = async (req, res) => {
     try {
@@ -162,11 +167,11 @@ exports.updateProject = async (req, res) => {
 }
 
 /**
- * Delete project
+ * Delete the given project
  * @method deleteProject
- * @description deletes the project specified by req.params.id
+ * @description deletes the project specified by `req.params.id`
  * 
- * Also removes the project reference from any teams or users it was assigned to and deleted associated projectRoles
+ * Also removes the project reference from any teams or users it was assigned to and deletes associated projectRoles and tasks
  */
 exports.deleteProject = async (req, res) => {
     try {
@@ -189,6 +194,8 @@ exports.deleteProject = async (req, res) => {
         // delete project roles
         projectRoles.deleteMany()
 
+        // 🟥 ALSO NEED TO DELETE ALL ASSOCIATED TASKS 🟥
+
         res.json({ message: `${project.title} deleted` })
     } catch (error) {
         res.status(400).json({ message: error.message })
@@ -196,9 +203,9 @@ exports.deleteProject = async (req, res) => {
 }
 
 /**
- * Show a project
+ * Show the given project
  * @method showProject
- * @description shows the project specified by req.params.id and populates associated task data
+ * @description shows the project specified by `req.params.id` and populates associated task data
  */
 exports.showProject = async (req, res) => {
     try {
@@ -216,7 +223,7 @@ exports.showProject = async (req, res) => {
 }
 
 /**
- * Show all personal projects
+ * Show all of the user's personal projects
  * @method showAllPersonalProjects
  * @description shows all of a user's personal projects and populates associated task data
  */
@@ -225,7 +232,7 @@ exports.showPersonalProjects = async (req, res) => {
         // find all personal projects where user is a member
         const projects = await Project.find({ members: { contains: req.user.id }, type: 'personal' })
         // populate task details
-        .populate('tasks', 'title dueDate assignedTo status')
+        .populate('tasks', 'title dueDate status')
         .exec()
         res.json({projects})
     } catch (error) {
