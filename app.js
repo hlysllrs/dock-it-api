@@ -14,6 +14,5 @@ app.use(morgan('combined'))
 app.use('/users', userRoutes)
 app.use('/teams', teamRoutes)
 app.use('/projects', projectRoutes)
-app.use('/tasks', taskRoutes)
 
 module.exports = app
