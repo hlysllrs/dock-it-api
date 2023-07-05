@@ -84,7 +84,7 @@ exports.addTeamMember = async (req, res) => {
         // find team using req.params.teamId
         const team = await Team.findOne({ _id: req.params.teamId })
         // find user by _id
-        const member = await User.findOne({ _id: req.body._id })
+        const member = await User.findOne({ _id: req.body.member })
         team.members.addToSet({ _id: member._id})
         await team.save()
         // create role for new member
@@ -111,7 +111,7 @@ exports.removeTeamMember = async (req, res) => {
         // find team using req.params.teamId
         const team = await Team.findOne({ _id: req.params.teamId })
         // find member by _id
-        const member = await User.findOne({ _id: req.body._id })
+        const member = await User.findOne({ _id: req.body.member })
         // remove member from team's members array
         team.members.splice(team.members.indexOf(member._id), 1)
         await team.save()
@@ -120,7 +120,7 @@ exports.removeTeamMember = async (req, res) => {
         // remove deleted role from member's teams array
         member.teams.splice(member.teams.indexOf(memberRole._id), 1)
         // find all team projects the member is assigned to
-        const projects = await Project.find({ team: team._id, members: { contains: member._id } })
+        const projects = await Project.find({ team: team._id, members: member._id })
         projects.forEach(async (project) => {
             // delete the member's projectRoles for the project
             const projectRole = await ProjectRole.findOneandDelete({ project: project._id, user: member._id })
@@ -138,7 +138,7 @@ exports.removeTeamMember = async (req, res) => {
         })
         await member.save()
 
-        res.json({ team, member })
+        res.json({ team, memberRole, member })
     } catch (error) {
         res.status(400).json({ message: error.message })
     }
@@ -185,39 +185,44 @@ exports.deleteTeam = async (req, res) => {
         const teamRoles = await TeamRole.find({ team: team._id })
         // remove associated team role from each member's projects array
         teamRoles.forEach(async (role) => {
-            const member = await User.find({ _id: role.user })
+            const member = await User.findOne({ _id: role.user })
             member.teams.splice(member.teams.indexOf(role._id), 1)
             await member.save()
         })
         // delete team roles
-        await teamRoles.deleteMany()
+        await TeamRole.deleteMany({ team: team._id })
 
-        // delete projects assigned to the team
-        const teamProjects = await Project.find({ team: team._id })
-        teamProjects.forEach(async (project) => {
-            // find all project roles associated with the project
-            const projectRoles = await ProjectRole.find({ project: project._id })
-            // remove associated project role from each member's projects array
-            projectRoles.forEach(async (role) => {
-                const member = await User.find({ _id: role.user })
-                member.projects.splice(member.projects.indexOf(role._id), 1)
-                await member.save()
+        if(team.projects.length > 0) {
+            // find all projects assigned to the team
+            const teamProjects = await Project.find({ team: team._id })
+            teamProjects.forEach(async (project) => {
+                // find all project roles associated with the project
+                const projectRoles = await ProjectRole.find({ project: project._id })
+                // remove associated project role from each member's projects array
+                projectRoles.forEach(async (role) => {
+                    const member = await User.find({ _id: role.user })
+                    member.projects.splice(member.projects.indexOf(role._id), 1)
+                    await member.save()
+                })
+                // delete project roles
+                await ProjectRole.deleteMany({ project: project._id })
+                
+                if(project.tasks.length > 0) {
+                    // find all tasks associated with each project
+                    const tasks = await Task.find({ project: project._id })
+                    // remove each associated task from assigned user's tasks array
+                    tasks.forEach(async (task) => {
+                        const userAssigned = await User.findOne({ _id: task.assignedTo })
+                        userAssigned.tasks.splice(userAssigned.tasks.indexOf(task._id), 1)
+                        await userAssigned.save()
+                    })
+                    // delete tasks
+                    await Task.deleteMany({ project: project._id })
+                }
             })
-            // delete project roles
-            await projectRoles.deleteMany()
-            // find all tasks associated with each project
-            const tasks = await Task.find({ project: project._id })
-            // remove each associated task from assigned user's tasks array
-            tasks.forEach(async (task) => {
-                const userAssigned = await User.findOne({ _id: task.assignedTo })
-                userAssigned.tasks.splice(userAssigned.tasks.indexOf(task._id), 1)
-                await userAssigned.save()
-            })
-            // delete tasks
-            await tasks.deleteMany()
-        })
-        await teamProjects.deleteMany()
-
+            // delete projects
+            await Project.deleteMany({ team: team._id })
+        }
         res.json({ message: `${team.title} deleted` })
     } catch (error) {
         res.status(400).json({ message: error.message })

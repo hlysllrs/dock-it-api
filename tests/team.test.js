@@ -7,6 +7,7 @@ const server = app.listen(8081, () => {
     console.log('testing on port 8081')
 })
 const User = require('../models/user')
+const Team = require('../models/team')
 let mongoServer
 
 beforeAll(async () => {
@@ -50,23 +51,119 @@ describe('Test team endpoints', () => {
         expect(response.body.user.teams).toContain(response.body.teamRole._id)
     })
 
-    // 🟥 FINISH THIS TEST 🟥
     test('It should add a member to a team', async () => {
-        const user = await User.create({
+        // find user by email and create a new token
+        const user = await User.findOne({ email: '1@test.com' })
+        const token = await user.generateAuthToken()
+        // create team for member to be added
+        const team = await Team.findOne({ title: 'team1', description: 'testing team 1'})
+        // create member to be added to team
+        const newMember = new User({
             firstName: 'test2',
             lastName: 'test2',
             email: '2@test.com',
             password: 'testing123',
-            isLoggedIn: true
         })
+        await newMember.save()
+        // send request with authorization and new member's _id and role
+        const response = await request(app)
+            .put(`/teams/add/${team._id}`)
+            .set('Authorization', `Bearer ${token}`)
+            .send({
+                member: newMember._id, 
+                role: 'contributor'
+            })
+        expect(response.statusCode).toBe(200)
+        expect(response.body.team.members).toContain(response.body.member._id)
+        expect(response.body.memberRole.user).toEqual(response.body.member._id)
+        expect(response.body.memberRole.role).toEqual('contributor')
+        expect(response.body.memberRole.team).toEqual(response.body.team._id)
+        expect(response.body.member.teams).toContain(response.body.memberRole._id)
+    })
 
+    test('It should remove a member from a team', async () => {
+        // find user by email and create a new token
+        const user = await User.findOne({ email: '1@test.com' })
         const token = await user.generateAuthToken()
+        // create team for member to be added
+        const team = await Team.findOne({ title: 'team1', description: 'testing team 1'})
+        // create member to be added to team
+        const member = await User.findOne({ email: '2@test.com' })
+        // send request with authorization and new member's _id and role
+        const response = await request(app)
+            .put(`/teams/remove/${team._id}`)
+            .set('Authorization', `Bearer ${token}`)
+            .send({
+                member: member._id
+            })
+        expect(response.statusCode).toBe(200)
+        expect(response.body.team.members).not.toContain(response.body.member._id)
+        expect(response.body.memberRole.user).toEqual(response.body.member._id)
+        expect(response.body.memberRole.role).toEqual('contributor')
+        expect(response.body.memberRole.team).toEqual(response.body.team._id)
+        expect(response.body.member.teams).not.toContain(response.body.memberRole._id)
+    })
 
-        const member = await User.create({
-            firstName: 'test3',
-            lastName: 'test3',
-            email: '3@test.com',
-            password: 'testing123',
-        })
+    test('It should update a team', async () => {
+        // find user by email and create a new token
+        const user = await User.findOne({ email: '1@test.com' })
+        const token = await user.generateAuthToken()
+        // create team for member to be added
+        const team = await Team.findOne({ title: 'team1', description: 'testing team 1'})
+        // send request with authorization and updated team details
+        const response = await request(app)
+            .put(`/teams/${team._id}`)
+            .set('Authorization', `Bearer ${token}`)
+            .send({
+                title: 'team1 updated',
+                description: 'updated testing team 1'
+            })
+        expect(response.statusCode).toBe(200)
+        expect(response.body.title).toEqual('team1 updated')
+        expect(response.body.description).toEqual('updated testing team 1')
+    })
+
+    test('It should show a team\'s details', async () => {
+        // find user by email and create a new token
+        const user = await User.findOne({ email: '1@test.com' })
+        const token = await user.generateAuthToken()
+        // create team for member to be added
+        const team = await Team.findOne({ title: 'team1 updated', description: 'updated testing team 1'})
+        // send request with authorization and updated team details
+        const response = await request(app)
+            .get(`/teams/${team._id}`)
+            .set('Authorization', `Bearer ${token}`)
+
+        expect(response.statusCode).toBe(200)
+        expect(response.body.title).toEqual('team1 updated')
+        expect(response.body.description).toEqual('updated testing team 1')
+        expect(response.body.members[0].firstName).toEqual('test1')
+        expect(response.body.members[0].lastName).toEqual('test1')
+        expect(response.body.members[0].fullName).toEqual('test1 test1')
+    })
+
+    // 🟥 TEST FOR SHOWING A TEAM'S PROJECTS 🟥
+    test('It should show all of a team\'s projects', async () => {
+
+    })
+
+    // 🟥 TEST FOR SHOWING All TEAMS AND THEIR PROJECTS 🟥
+    test('It should show all of a team\'s projects', async () => {
+
+    })
+
+    test('It should delete a team', async () => {
+        // find user by email and create a new token
+        const user = await User.findOne({ email: '1@test.com' })
+        const token = await user.generateAuthToken()
+        // create team for member to be added
+        const team = await Team.findOne({ title: 'team1 updated', description: 'updated testing team 1'})
+        // send request with authorization and updated team details
+        const response = await request(app)
+            .delete(`/teams/${team._id}`)
+            .set('Authorization', `Bearer ${token}`)
+
+        expect(response.statusCode).toBe(200)
+        expect(response.body.message).toEqual(`${team.title} deleted`)
     })
 })

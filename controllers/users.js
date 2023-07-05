@@ -82,7 +82,7 @@ exports.updateUser = async (req, res) => {
         const updates = Object.keys(req.body)
         updates.forEach(update => req.user[update] = req.body[update])
         await req.user.save()
-        res.json(user)
+        res.json(req.user)
     } catch (error) {
         res.status(400).json({ message: error.message })
     }

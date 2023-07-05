@@ -31,11 +31,10 @@ describe('Test user endpoints', () => {
                 password: 'porridge', 
             })
         expect(response.statusCode).toBe(200)
-        expect(response.body.user.firstName).toEqual('Goldie')
-        expect(response.body.user.lastName).toEqual('Locks')
-        expect(response.body.user.email).toEqual('hello@notmyhouse.com')
-        expect(response.body.user.isLoggedIn).toEqual(false)
-        expect(response.body).toHaveProperty('token') // 🟥 DON'T NEED IF NOT ASSIGNING TOKEN AT ACCOUNT CREATION 🟥 
+        expect(response.body.firstName).toEqual('Goldie')
+        expect(response.body.lastName).toEqual('Locks')
+        expect(response.body.email).toEqual('hello@notmyhouse.com')
+        expect(response.body.isLoggedIn).toEqual(false)
     })
 
     test('It should show a user', async () => {
