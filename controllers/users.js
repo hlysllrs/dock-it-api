@@ -43,7 +43,7 @@ exports.createUser = async (req, res) => {
     try {
         const user = new User(req.body)
         await user.save()
-        res.json({ user, token })
+        res.json(user)
     } catch (error) {
         res.status(400).json({ message: error.message })
     }
