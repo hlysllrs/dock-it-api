@@ -3,7 +3,14 @@ const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const secret = process.env.SECRET_KEY
 
-// authenticate user
+/**
+ * Authenticate a user
+ * @method auth
+ * @description Authenticates a user's token and check that user is logged in before excecuting the next function in the route's callbacks
+ * @throws throws an error if the user's token can not be verified or if the user is not logged in
+ * 
+ * Also saves the user's information to `req.user` for use in the remaining functions in the route's callbacks
+ */
 exports.auth = async (req, res, next) => {
     try {
         const token = req.header('Authorization').replace('Bearer ', '')
@@ -19,42 +26,75 @@ exports.auth = async (req, res, next) => {
     }
 }
 
-// create a new user
+/**
+ * Create a new user
+ * @method createUser
+ * @description creates a new user
+ * 
+ * Request will contain: 
+ *  - firstName: (required) new user's first name
+ *  - lastName: (required) new user's last name
+ *  - email: (required) new user's email address
+ *  - password: (required) new user's password - must be at least 8 characters
+ * 
+ * Note: user must login after creating an account. Authentication token is generated upon login. 
+ */
 exports.createUser = async (req, res) => {
     try {
         const user = new User(req.body)
         await user.save()
-        const token = await user.generateAuthToken() // 🟥 CREATE TOKEN HERE OR NEED TO LOG IN AFTER CREATING??? 🟥
         res.json({ user, token })
     } catch (error) {
         res.status(400).json({ message: error.message })
     }
 }
 
-// show a specific user
+/**
+ * Show a specific user
+ * @method showUser
+ * @description shows the details for the user specified by req.params.userId.
+ */
 exports.showUser = async (req, res) => {
     try {
-        const user = await User.findOne({ _id: req.params.id }) // 🟥 CAN I USE REQ.USER HERE INSTEAD SINCE AUTH WAS RUN FIRST??? 🟥
+        const user = await User.findOne({ _id: req.params.userId })
         res.json(user)
     } catch (error) {
         res.status(400).json({ message: error.message })
     }
 }
 
-// update a user
+/**
+ * Update user details for the given user
+ * @method updateUser
+ * @description updates information of the user specified by req.params.userId
+ * 
+ * Request may contain: 
+ *  - firstName: user's first name
+ *  - lastName: user's last name
+ *  - email: user's email address
+ *  - password: user's password - must be at least 8 characters
+ * 
+ * For making changes to the user's teams array, please use the {@linkcode addTeamMember} or {@linkcode removeTeamMember} methods provided in the teams controllers.  
+ * For making changes to the user's projects array, please use the {@linkcode addProjectMamber} or {@linkcode removProjectMember} methods provided in the projects controllers. 
+ */
 exports.updateUser = async (req, res) => {
     try {
         const updates = Object.keys(req.body)
-        const user = await User.findOne({ _id: req.params.id }) // 🟥 CAN I USE REQ.USER HERE INSTEAD SINCE AUTH WAS RUN FIRST??? 🟥
-        updates.forEach(update => user[update] = req.body[update])
-        await user.save()
+        updates.forEach(update => req.user[update] = req.body[update])
+        await req.user.save()
         res.json(user)
     } catch (error) {
         res.status(400).json({ message: error.message })
     }
 }
 
-// delete a user
+/**
+ * Delete the given user
+ * @method deleteUser
+ * @description deletes the user specified by req.params.userId
+ * 
+ * Also removes the user reference from any teams, projects, or tasks they were assigned to and deletes associated projectRoles, teamRoles and personal projects. 
+ */
 exports.deleteUser = async (req, res) => {
     try {
         await req.user.deleteOne()
@@ -71,7 +111,16 @@ exports.deleteUser = async (req, res) => {
     }
 }
 
-// login a user
+/**
+ * Login a user
+ * @method loginUser
+ * @description used to log a user in to the application
+ * @throws throws an error if the user is not found in the database or if the password entered is incorrect
+ * 
+ * Request will contain: 
+ *  - email: (required) user's email address
+ *  - password: (required) user's password
+ */
 exports.loginUser = async (req, res) => {
     try {
         const user = await User.findOne({ email: req.body.email })
@@ -88,7 +137,11 @@ exports.loginUser = async (req, res) => {
     }
 }
 
-// logout a user
+/**
+ * Logout a user
+ * @method logoutUser
+ * @description used to log a user out of the application
+ */
 exports.logoutUser = async (req, res) => {
     try {
         const user = req.user

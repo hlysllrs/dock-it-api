@@ -3,16 +3,17 @@ const TeamRole = require('../models/teamRole')
 const Team = require('../models/team')
 const ProjectRole = require('../models/projectRole')
 const Project = require('../models/project')
+const Task = require('../models/task')
 
 /**
  * Checks if the user is a member of the given team
  * @method checkMember
- * @description used to check if the user making the request is a member of the team specified by `req.params.id` before excecuting the next function in the route's callbacks
+ * @description used to check if the user making the request is a member of the team specified by req.params.teamId before excecuting the next function in the route's callbacks
  * @throws throws an error if the user is not a member of the team
  */
 exports.checkMember = async (req, res, next) => {
     try {
-        const team = await Team.findOne({ _id: req.params.id })
+        const team = await Team.findOne({ _id: req.params.teamId })
         if(!team.members.includes(req.user._id)) {
             throw new Error(`user is not a member of ${team.title}`)
         }
@@ -25,12 +26,12 @@ exports.checkMember = async (req, res, next) => {
 /**
  * Checks if the user is an admin for the given team
  * @method checkAdmin
- * @description used to check if the user making the request is an admin of the team specified by `req.params.id` before excecuting the next function in the route's callbacks
+ * @description used to check if the user making the request is an admin of the team specified by req.params.teamId before excecuting the next function in the route's callbacks
  * @throws throws an error if the user is not an admin for the team
  */
 exports.checkAdmin = async (req, res, next) => {
     try {
-        const userRole = await TeamRole.findOne({ user: req.user._id, team: req.params.id })
+        const userRole = await TeamRole.findOne({ user: req.user._id, team: req.params.teamId })
         if(userRole.role !== 'admin') {
             throw new Error('user not authorized')
         }
@@ -71,7 +72,7 @@ exports.createTeam = async (req, res) => {
 /**
  * Add a member to the given team
  * @method addTeamMember
- * @description adds a member to the team specified by `req.params.id`
+ * @description adds a member to the team specified by req.params.teamId
  * 
  * Request will contain: 
  *  - member: (required) ObjectId of the user being added as a member to the team
@@ -80,8 +81,8 @@ exports.createTeam = async (req, res) => {
  */
 exports.addTeamMember = async (req, res) => {
     try {
-        // find team using req.params.id
-        const team = await Team.findOne({ _id: req.params.id })
+        // find team using req.params.teamId
+        const team = await Team.findOne({ _id: req.params.teamId })
         // find user by _id
         const member = await User.findOne({ _id: req.body._id })
         team.members.addToSet({ _id: member._id})
@@ -100,15 +101,15 @@ exports.addTeamMember = async (req, res) => {
 /**
  * Remove a member from the given team
  * @method removeTeamMember
- * @description removes a member from the team specified by `req.params.id`
+ * @description removes a member from the team specified by req.params.teamId
  * 
  * Request will contain: 
  *  - member: (required) ObjectId of the user being removed as a member of the team
  */
 exports.removeTeamMember = async (req, res) => {
     try {
-        // find team using req.params.id
-        const team = await Team.findOne({ _id: req.params.id })
+        // find team using req.params.teamId
+        const team = await Team.findOne({ _id: req.params.teamId })
         // find member by _id
         const member = await User.findOne({ _id: req.body._id })
         // remove member from team's members array
@@ -118,9 +119,24 @@ exports.removeTeamMember = async (req, res) => {
         const memberRole = await TeamRole.findOneAndDelete({ user: member._id, team: team._id })
         // remove deleted role from member's teams array
         member.teams.splice(member.teams.indexOf(memberRole._id), 1)
-        member.save()
-
-        // 🟥 ALSO NEED TO REMOVE THE MEMBER FROM ALL ASSOCIATED PROJECTS AND TASKS 🟥
+        // find all team projects the member is assigned to
+        const projects = await Project.find({ team: team._id, members: { contains: member._id } })
+        projects.forEach(async (project) => {
+            // delete the member's projectRoles for the project
+            const projectRole = await ProjectRole.findOneandDelete({ project: project._id, user: member._id })
+            // remove the projectRoles from the member's projects array
+            member.projects.splice(member.projects.indexOf(projectRole._id), 1)
+            // find all tasks associated to the project the member is assigned to 
+            const tasks = await Task.find({ project: project._id, assignedTo: member._id })
+            tasks.forEach(async (task) => {
+                // update each task to be unassigned
+                task.assignedTo = null
+                await task.save()
+                // remove each task from the member's tasks array
+                member.tasks.splice(member.tasks.indexOf(task._id), 1)
+            })
+        })
+        await member.save()
 
         res.json({ team, member })
     } catch (error) {
@@ -129,9 +145,9 @@ exports.removeTeamMember = async (req, res) => {
 }
 
 /**
- * Update project details for the given team
+ * Update team details for the given team
  * @method updateTeam
- * @description updates information of the team specified by `req.params.id`
+ * @description updates information of the team specified by req.params.teamId
  * 
  * Request may contain: 
  *  - title: title of the team
@@ -142,8 +158,8 @@ exports.removeTeamMember = async (req, res) => {
  */
 exports.updateTeam = async (req, res) => {
     try {
-        // find team using req.params.id
-        const team = await Team.findOne({ _id: req.params.id })
+        // find team using req.params.teamId
+        const team = await Team.findOne({ _id: req.params.teamId })
         // make requested updates to team information
         const updates = Object.keys(req.body)
         updates.forEach(update => team[update] = req.body[update])
@@ -157,14 +173,14 @@ exports.updateTeam = async (req, res) => {
 /**
  * Delete the given team
  * @method deleteTeam
- * @description deletes the team specified by `req.params.id`
+ * @description deletes the team specified by req.params.teamId
  * 
  * Also removes the team reference from any users it was assigned to and deletes associated projects, projectRoles, and tasks for those projects
  */
 exports.deleteTeam = async (req, res) => {
     try {
-        // find team using req.params.id and delete
-        const team = await Team.findOneAndDelete({ _id: req.params.id })
+        // find team using req.params.teamId and delete
+        const team = await Team.findOneAndDelete({ _id: req.params.teamId })
         // find all team roles associated with the team
         const teamRoles = await TeamRole.find({ team: team._id })
         // remove associated team role from each member's projects array
@@ -174,7 +190,7 @@ exports.deleteTeam = async (req, res) => {
             await member.save()
         })
         // delete team roles
-        teamRoles.deleteMany()
+        await teamRoles.deleteMany()
 
         // delete projects assigned to the team
         const teamProjects = await Project.find({ team: team._id })
@@ -186,27 +202,23 @@ exports.deleteTeam = async (req, res) => {
                 const member = await User.find({ _id: role.user })
                 member.projects.splice(member.projects.indexOf(role._id), 1)
                 await member.save()
-        })
+            })
             // delete project roles
-            projectRoles.deleteMany()
-
-            // 🟥 ALSO NEED TO DELETE ALL ASSOCIATED TASKS 🟥
+            await projectRoles.deleteMany()
+            // find all tasks associated with each project
+            const tasks = await Task.find({ project: project._id })
+            // remove each associated task from assigned user's tasks array
+            tasks.forEach(async (task) => {
+                const userAssigned = await User.findOne({ _id: task.assignedTo })
+                userAssigned.tasks.splice(userAssigned.tasks.indexOf(task._id), 1)
+                await userAssigned.save()
+            })
+            // delete tasks
+            await tasks.deleteMany()
         })
-
+        await teamProjects.deleteMany()
 
         res.json({ message: `${team.title} deleted` })
-    } catch (error) {
-        res.status(400).json({ message: error.message })
-    }
-}
-
-// show a team's info
-exports.showTeamProjects = async (req, res) => {
-    try {
-        // find team using req.params.id, then populate the team's projects
-        const team = await Team.findOne({ _id: req.params.id }).populate('projects').exec()
-        team.projects.populate('tasks', 'title dueDate status')
-        res.json(team)
     } catch (error) {
         res.status(400).json({ message: error.message })
     }
@@ -215,13 +227,13 @@ exports.showTeamProjects = async (req, res) => {
 /**
  * Show the given team's details
  * @method showTeamDetails
- * @description shows the details for the team specified by `req.params.id`. Details shown include title, description, and members' names.
+ * @description shows the details for the team specified by req.params.teamId. Details shown include title, description, and members' names.
  * 
  * To view all of the team's projects, please use the {@linkcode showTeamProjects} method provided.
  */
 exports.showTeamDetails = async (req, res) => {
     try {
-        const team = await Team.findOne({ _id: req.params.id })
+        const team = await Team.findOne({ _id: req.params.teamId })
             .populate('members', 'firstName lastName fullName')
             .exec()
         res.json(team)
@@ -230,7 +242,30 @@ exports.showTeamDetails = async (req, res) => {
     }
 }
 
-// show all of a user's teams
+/**
+ * Show the given team's projects
+ * @method showTeamProjects
+ * @description shows the projects for the team specified by req.params.teamId. Each project is populated with the details of its associated tasks and the user each task is assigned to.
+ * 
+ * To view the team's details, including a list of the team's members, please use the {@linkcode showTeamDetails} method provided.
+ */
+exports.showTeamProjects = async (req, res) => {
+    try {
+        // find team using req.params.teamId, then populate the team's projects
+        const team = await Team.findOne({ _id: req.params.teamId }).populate('projects').exec()
+        team.projects.populate('tasks', 'title dueDate assignedTo status')
+        team.projects.tasks.populate('assignedTo', 'firstName lastName fullName')
+        res.json(team)
+    } catch (error) {
+        res.status(400).json({ message: error.message })
+    }
+}
+
+/**
+ * Show all of the user's teams and team projects
+ * @method showAllTeams
+ * @description shows the all teams and projects the user is a member of. Each project is populated with the details of its associated tasks and the user each task is assigned to.
+ */
 exports.showAllTeams = async (req, res) => {
     try {
         const teamRoles = await TeamRole.find({ user: req.user._id })
@@ -245,5 +280,3 @@ exports.showAllTeams = async (req, res) => {
         res.status(400).json({ message: error.message })
     }
 }
-
-// 🟥 METHOD FOR CHANGING A MEMBER'S ROLE?? 🟥

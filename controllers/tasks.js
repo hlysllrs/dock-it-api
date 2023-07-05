@@ -28,7 +28,7 @@ exports.checkAssignedMember = async (req, res, next) => {
 /**
  * Create a new task
  * @method createTask
- * @description creates a new project
+ * @description creates a new task
  * 
  * Request will contain: 
  *  - title: (required) title of the task  
