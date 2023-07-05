@@ -7,22 +7,22 @@ const userCtrl = require('../controllers/users')
 router.post('/', userCtrl.auth, teamCtrl.createTeam)
 
 // add member to a team
-router.put('/add/:id', userCtrl.auth, teamCtrl.checkAdmin, teamCtrl.addTeamMember)
+router.put('/add/:teamId', userCtrl.auth, teamCtrl.checkAdmin, teamCtrl.addTeamMember)
 
 // // remove member from team
-router.put('/remove/:id', userCtrl.auth, teamCtrl.checkAdmin, teamCtrl.removeTeamMember)
+router.put('/remove/:teamId', userCtrl.auth, teamCtrl.checkAdmin, teamCtrl.removeTeamMember)
 
 // update team info
-router.put('/:id', userCtrl.auth, teamCtrl.checkAdmin, teamCtrl.updateTeam)
+router.put('/:teamId', userCtrl.auth, teamCtrl.checkAdmin, teamCtrl.updateTeam)
 
 // delete team
-router.delete('/:id', userCtrl.auth, teamCtrl.checkAdmin, teamCtrl.deleteTeam)
+router.delete('/:teamId', userCtrl.auth, teamCtrl.checkAdmin, teamCtrl.deleteTeam)
 
 // show team details
-router.get('/:id', userCtrl.auth, teamCtrl.showTeamDetails)
+router.get('/:teamId', userCtrl.auth, teamCtrl.checkMember, teamCtrl.showTeamDetails)
 
 // show team projects
-router.get('/:id/projects', userCtrl.auth, teamCtrl.showTeamProjects)
+router.get('/:teamId/projects', userCtrl.auth, teamCtrl.checkMember, teamCtrl.showTeamProjects)
 
 // show all user's teams
 router.get('/', userCtrl.auth, teamCtrl.showAllTeams)

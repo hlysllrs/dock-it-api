@@ -1,7 +1,7 @@
 const express = require('express')
 const router = express.Router({ mergeParams: true })
 const taskCtrl = require('../controllers/tasks')
-const teamCtrl = require('../controllers/teams')
+const projectCtrl = require('../controllers/projects')
 const userCtrl = require('../controllers/users')
 
 // create a task
