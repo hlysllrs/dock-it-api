@@ -24,5 +24,48 @@ afterAll(async () => {
 })
 
 describe('Test task endpoints', () => {
-    
+    test('It should create a team project', async () => {
+        // create a logged in user and a token
+        const user = new User({
+            firstName: 'test3',
+            lastName: 'test1',
+            email: '1@test.com',
+            password: 'testing123',
+            isLoggedIn: true
+        })
+        await user.save()
+        const token = await user.generateAuthToken()
+
+        // send request with authorization and team info to create a team
+        const createTeam = await request(app)
+            .post('/teams')
+            .set('Authorization', `Bearer ${token}`)
+            .send({
+                title: 'team2', 
+                description: 'testing team 2'
+            })
+
+        const team = await Team.findOne({ title: 'team2', 
+        description: 'testing team 2' })
+        
+        const response = await request(app)
+            .post('/projects')
+            .set('Authorization', `Bearer ${token}`)
+            .send({
+                title: 'project1',
+                description: 'testing project 1', 
+                type: 'team', 
+                endDate: '08/01/2023', 
+                team: team._id
+            })
+        
+        expect(response.statusCode).toBe(200)
+        expect(response.body.project.title).toEqual('project1')
+        expect(response.body.project.description).toEqual('testing project 1')
+        expect(response.body.project.type).toEqual('team')
+        expect(response.body.project.members).toContain(response.body.user._id)
+        expect(response.body.projectRole.role).toEqual('admin')
+        expect(response.body.projectRole.project).toEqual(response.body.project._id)
+        expect(response.body.user.projects).toContain(response.body.projectRole._id)
+    })
 })

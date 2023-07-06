@@ -2,6 +2,7 @@ const User = require('../models/user')
 const ProjectRole = require('../models/projectRole')
 const Project = require('../models/project')
 const Team = require('../models/team')
+const TeamRole = require('../models/teamRole')
 const Task = require('../models/task')
 
 /**
@@ -63,7 +64,7 @@ exports.createProject= async (req, res) => {
         // if the project is a team project, check if the user is an admin for the team
         if(req.body.type === 'team'){
             const teamRole = await TeamRole.findOne({ user: req.user._id, team: req.body.team })
-            if(teamRole !== 'admin') {
+            if(teamRole.role !== 'admin') {
                 throw new Error('user not authorized to create team projects')
             }
         }
@@ -103,7 +104,7 @@ exports.addProjectMember = async (req, res) => {
         // find project using req.params.projectId
         const project = await Project.findOne({ _id: req.params.projectId })
         // find user by _id
-        const member = await User.findOne({ _id: req.body._id })
+        const member = await User.findOne({ _id: req.body.member })
         project.members.addToSet({ _id: member._id})
         await project.save()
         // create role for new member
@@ -130,7 +131,7 @@ exports.removeProjectMember = async (req, res) => {
         // find project using req.params.projectId
         const project = await Project.findOne({ _id: req.params.projectId })
         // find member by _id
-        const member = await User.findOne({ _id: req.body._id })
+        const member = await User.findOne({ _id: req.body.member })
         // remove member from project's members array
         project.members.splice(project.members.indexOf(member._id), 1)
         await project.save()
@@ -146,7 +147,7 @@ exports.removeProjectMember = async (req, res) => {
             member.tasks.splice(member.tasks.indexOf(task._id), 1)
         })
         member.save()
-        res.json({ project, member })
+        res.json({ project, memberRole, member })
     } catch (error) {
         res.status(400).json({ message: error.message })
     }
@@ -206,7 +207,7 @@ exports.deleteProject = async (req, res) => {
             await member.save()
         })
         // delete project roles
-        await projectRoles.deleteMany()
+        await ProjectRole.deleteMany({ project: project._id })
         // find all tasks associated with the project
         const tasks = await Task.find({ project: project._id })
         // remove associated task from each assigned user's tasks array
@@ -216,7 +217,7 @@ exports.deleteProject = async (req, res) => {
             await userAssigned.save()
         })
         // delete tasks
-        await tasks.deleteMany()
+        await Task.deleteMany({ project: project._id })
 
         res.json({ message: `${project.title} deleted` })
     } catch (error) {

@@ -123,7 +123,7 @@ exports.removeTeamMember = async (req, res) => {
         const projects = await Project.find({ team: team._id, members: member._id })
         projects.forEach(async (project) => {
             // delete the member's projectRoles for the project
-            const projectRole = await ProjectRole.findOneandDelete({ project: project._id, user: member._id })
+            const projectRole = await ProjectRole.findOneAndDelete({ user: member._id, project: project._id })
             // remove the projectRoles from the member's projects array
             member.projects.splice(member.projects.indexOf(projectRole._id), 1)
             // find all tasks associated to the project the member is assigned to 
@@ -192,37 +192,34 @@ exports.deleteTeam = async (req, res) => {
         // delete team roles
         await TeamRole.deleteMany({ team: team._id })
 
-        if(team.projects.length > 0) {
-            // find all projects assigned to the team
-            const teamProjects = await Project.find({ team: team._id })
-            teamProjects.forEach(async (project) => {
-                // find all project roles associated with the project
-                const projectRoles = await ProjectRole.find({ project: project._id })
-                // remove associated project role from each member's projects array
-                projectRoles.forEach(async (role) => {
-                    const member = await User.find({ _id: role.user })
-                    member.projects.splice(member.projects.indexOf(role._id), 1)
-                    await member.save()
-                })
-                // delete project roles
-                await ProjectRole.deleteMany({ project: project._id })
-                
-                if(project.tasks.length > 0) {
-                    // find all tasks associated with each project
-                    const tasks = await Task.find({ project: project._id })
-                    // remove each associated task from assigned user's tasks array
-                    tasks.forEach(async (task) => {
-                        const userAssigned = await User.findOne({ _id: task.assignedTo })
-                        userAssigned.tasks.splice(userAssigned.tasks.indexOf(task._id), 1)
-                        await userAssigned.save()
-                    })
-                    // delete tasks
-                    await Task.deleteMany({ project: project._id })
-                }
+        // find all projects assigned to the team
+        const teamProjects = await Project.find({ team: team._id })
+        teamProjects.forEach(async (project) => {
+            // find all project roles associated with the project
+            const projectRoles = await ProjectRole.find({ project: project._id })
+            // remove associated project role from each member's projects array
+            projectRoles.forEach(async (role) => {
+                const member = await User.find({ _id: role.user })
+                member.projects.splice(member.projects.indexOf(role._id), 1)
+                await member.save()
             })
-            // delete projects
-            await Project.deleteMany({ team: team._id })
-        }
+            // delete project roles
+            await ProjectRole.deleteMany({ project: project._id })
+            
+            // find all tasks associated with each project
+            const tasks = await Task.find({ project: project._id })
+            // remove each associated task from assigned user's tasks array
+            tasks.forEach(async (task) => {
+                const userAssigned = await User.findOne({ _id: task.assignedTo })
+                userAssigned.tasks.splice(userAssigned.tasks.indexOf(task._id), 1)
+                await userAssigned.save()
+            })
+            // delete tasks
+            await Task.deleteMany({ project: project._id })
+        })
+        // delete projects
+        await Project.deleteMany({ team: team._id })
+
         res.json({ message: `${team.title} deleted` })
     } catch (error) {
         res.status(400).json({ message: error.message })
