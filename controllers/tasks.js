@@ -100,11 +100,11 @@ exports.reassignTask = async (req, res) => {
         // find previous user task was assigned to 
         const prevAssigned = await User.findOne({ _id: task.assignedTo })
         // remove task from previously assigned user's tasks array
-        prevAssigned.tasks.splice(prevAssigned.tasks.indexOf(task._id), 1)
-        prevAssigned.save()
+        prevAssigned.tasks.pull(task._id)
+        await prevAssigned.save()
         // add task to newly assigned user's tasks array
         req.userAssigned.tasks.addToSet({ _id: task._id })
-        req.userAssigned.save()
+        await req.userAssigned.save()
         // update task to be assigned to the new user
         task.assignedTo = req.userAssigned._id
         await task.save()
@@ -132,7 +132,7 @@ exports.updateTaskStatus = async (req, res) => {
         }
         // update tasks's status
         task.status = req.body.status
-        task.save()
+        await task.save()
         res.json(task)
     } catch (error) {
         res.status(400).json({ message: error.message })
@@ -152,12 +152,12 @@ exports.deleteTask = async (req, res) => {
         const task = await Task.findOneAndDelete({ _id: req.params.taskId })
         // remove task from assigned project's tasks array
         const project = await Project.findOne({ _id: req.params.projectId })
-        project.tasks.splice(project.tasks.indexOf(task._id), 1)
-        project.save()
+        project.tasks.pull(task._id)
+        await project.save()
         // remove task from assigned user's tasks array
         const userAssigned = await User.findOne({ _id: task.assignedTo })
-        userAssigned.tasks.splice(userAssigned.tasks.indexOf(task._id), 1)
-        userAssigned.save()
+        userAssigned.tasks.pull(task._id)
+        await userAssigned.save()
         res.json({ message: `${task.title} deleted` })
     } catch (error) {
         res.status(400).json({ message: error.message })

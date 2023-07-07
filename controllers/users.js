@@ -1,4 +1,9 @@
 const User = require('../models/user')
+const ProjectRole = require('../models/projectRole')
+const Project = require('../models/project')
+const Team = require('../models/team')
+const TeamRole = require('../models/teamRole')
+const Task = require('../models/task')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const secret = process.env.SECRET_KEY
@@ -97,12 +102,57 @@ exports.updateUser = async (req, res) => {
  */
 exports.deleteUser = async (req, res) => {
     try {
-        await req.user.deleteOne()
+        // find all of the user's personal projects
+        const personalProjects = await Project.find({ type: 'personal', members: req.user._id })
+        // delete each project and associated roles and tasks
+        personalProjects.forEach(async (project) => {
+        // find all project roles associated with the project
+        const projectRoles = await ProjectRole.find({ project: project._id })
+        // remove associated project role from each member's projects array
+        projectRoles.forEach(async (role) => {
+            const member = await User.findOne({ _id: role.user })
+            member.projects.pull(role._id)
+            await member.save()
+        })
+        // delete project roles
+        await ProjectRole.deleteMany({ project: project._id })
+        // find all tasks associated with the project
+        const tasks = await Task.find({ project: project._id })
+        // remove associated task from each assigned user's tasks array
+        tasks.forEach(async (task) => {
+            const userAssigned = await User.findOne({ _id: task.assignedTo })
+            userAssigned.tasks.pull(task._id)
+            await userAssigned.save()
+        })
+        // delete tasks
+        await Task.deleteMany({ project: project._id })
+        })
 
-          // 🟥 ALSO NEED TO DELETE ALL PERSONAL PROJECTS AND TASKS 🟥
-          // 🟥 NEED TO REMOVE ALL TEAM ROLES AND PROJECT ROLES 🟥
-          // 🟥 NEED TO REMOVE USER FROM ALL TEAMS AND TEAM PROJECTS 🟥
-          // 🟥 UPDATE ANY ASSIGNED TASKS TO BE UNASSIGNED 🟥
+        // find all teams where user is a member
+        const teams = await Team.find({ members: req.user._id })
+        // remove user from each team, delete team roles, remove user from team's projects, delete project roles, and update tasks to be unassigned
+        teams.forEach(async (team) => {
+            // remove member from team's members array
+            team.members.pull(req.user._id)
+            await team.save()
+            // delete member's teamRole for team
+            const memberRole = await TeamRole.findOneAndDelete({ user: req.user._id, team: team._id })
+            // find all team projects the member is assigned to
+            const projects = await Project.find({ team: team._id, members: req.user._id })
+            projects.forEach(async (project) => {
+                // delete the member's projectRoles for the project
+                const projectRole = await ProjectRole.findOneAndDelete({ user: req.user._id, project: project._id })
+                // find all tasks associated to the project the member is assigned to 
+                const tasks = await Task.find({ project: project._id, assignedTo: req.user._id })
+                tasks.forEach(async (task) => {
+                    // update each task to be unassigned
+                    task.assignedTo = null
+                    await task.save()
+                })              
+            })
+        })
+        // delete the user
+        await req.user.deleteOne()
 
         res.json({ message: 'user deleted' })
     } catch (error) {

@@ -133,20 +133,20 @@ exports.removeProjectMember = async (req, res) => {
         // find member by _id
         const member = await User.findOne({ _id: req.body.member })
         // remove member from project's members array
-        project.members.splice(project.members.indexOf(member._id), 1)
+        project.members.pull(member._id)
         await project.save()
         // delete member's projectRole for project
         const memberRole = await ProjectRole.findOneAndDelete({ user: member._id, project: project._id })
         // remove deleted role from member's projects array
-        member.projects.splice(member.projects.indexOf(memberRole._id), 1)
+        member.projects.pull(memberRole._id)
         // remove the member from all assigned tasks and remove tasks from member's tasks array
         const tasks = await Task.find({ project: project._id, assignedTo: member._id })
         tasks.forEach(async (task) => {
             task.assignedTo = null
             await task.save()
-            member.tasks.splice(member.tasks.indexOf(task._id), 1)
+            member.tasks.pull(task._id)
         })
-        member.save()
+        await member.save()
         res.json({ project, memberRole, member })
     } catch (error) {
         res.status(400).json({ message: error.message })
@@ -195,7 +195,7 @@ exports.deleteProject = async (req, res) => {
         // if project is a team project, remove from team's projects array
         if(project.type === 'team') {
             const team = await Team.findOne({ _id: project.team })
-            team.projects.splice(team.projects.indexOf(project._id), 1)
+            team.projects.pull(project._id)
             await team.save()
         }
         // find all project roles associated with the project
@@ -203,7 +203,7 @@ exports.deleteProject = async (req, res) => {
         // remove associated project role from each member's projects array
         projectRoles.forEach(async (role) => {
             const member = await User.findOne({ _id: role.user })
-            member.projects.splice(member.projects.indexOf(role._id), 1)
+            member.projects.pull(role._id)
             await member.save()
         })
         // delete project roles
@@ -213,7 +213,7 @@ exports.deleteProject = async (req, res) => {
         // remove associated task from each assigned user's tasks array
         tasks.forEach(async (task) => {
             const userAssigned = await User.findOne({ _id: task.assignedTo })
-            userAssigned.tasks.splice(userAssigned.tasks.indexOf(task._id), 1)
+            userAssigned.tasks.pull(task._id)
             await userAssigned.save()
         })
         // delete tasks
