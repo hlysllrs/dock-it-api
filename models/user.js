@@ -12,9 +12,8 @@ const userSchema = new mongoose.Schema({
         lowercase: true, 
         trim: true, 
         unique: true
-        // 🟥 ADD EMAIL ADDRESS VALIDATION HERE 🟥 
     },
-    password: { type: String, required: true, minLength: 8 }, // 🟥 ADD PASSWORD CHARACTER TYPE REQUIREMENTS??? 🟥 
+    password: { type: String, required: true, minLength: 8 },
     teams: [{ type: mongoose.Types.ObjectId, ref: 'TeamRole' }],
     projects: [{ type: mongoose.Types.ObjectId, ref: 'ProjectRole' }],
     tasks: [{ type: mongoose.Types.ObjectId, ref: 'Task' }], 
