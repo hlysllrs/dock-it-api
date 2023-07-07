@@ -4,7 +4,6 @@ const morgan = require('morgan')
 const userRoutes = require('./routes/users')
 const teamRoutes = require('./routes/teams')
 const projectRoutes = require('./routes/projects')
-const taskRoutes = require('./routes/tasks')
 
 const app = express()
 
