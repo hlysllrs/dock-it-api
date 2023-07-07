@@ -8,6 +8,8 @@ const server = app.listen(8081, () => {
 })
 const User = require('../models/user')
 const Team = require('../models/team')
+const Project = require('../models/project')
+const Task = require('../models/task')
 let mongoServer
 
 beforeAll(async () => {
@@ -129,7 +131,7 @@ describe('Test team endpoints', () => {
         const token = await user.generateAuthToken()
         // find team to be shown
         const team = await Team.findOne({ title: 'team1 updated', description: 'updated testing team 1'})
-        // send request with authorization and updated team details
+        // send request with authorization
         const response = await request(app)
             .get(`/teams/${team._id}`)
             .set('Authorization', `Bearer ${token}`)
@@ -142,9 +144,46 @@ describe('Test team endpoints', () => {
         expect(response.body.members[0].fullName).toEqual('test1 test1')
     })
 
-    // 🟥 TEST FOR SHOWING A TEAM'S PROJECTS 🟥
     test('It should show all of a team\'s projects', async () => {
+        // find user by email and create a new token
+        const user = await User.findOne({ email: '1@test.com' })
+        const token = await user.generateAuthToken()
+        // find team to be shown
+        const team = await Team.findOne({ title: 'team1 updated', description: 'updated testing team 1'})
+        // create a team project
+        await request(app)
+            .post('/projects')
+            .set('Authorization', `Bearer ${token}`)
+            .send({
+                title: 'project1',
+                description: 'testing project 1', 
+                type: 'team', 
+                endDate: '08/01/2023', 
+                team: team._id
+            })
+        const project = await Project.findOne({ title: 'project1' })
+        // create task assigned to project
+        await request(app)
+        .post(`/projects/${project._id}/tasks`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+            title: 'task1',
+            dueDate: '07/08/2023', 
+            project: project._id,
+            assignedTo: user._id
+        })
 
+        // send request with authorization
+        const response = await request(app)
+            .get(`/teams/${team._id}/projects`)
+            .set('Authorization', `Bearer ${token}`)
+
+        expect(response.statusCode).toBe(200)
+        expect(response.body.title).toEqual('team1 updated')
+        expect(response.body.description).toEqual('updated testing team 1')
+        expect(response.body.projects[0].tasks[0].title).toEqual('task1')
+        expect(response.body.projects[0].tasks[0].status).toEqual('Not Started')
+        expect(response.body.projects[0].tasks[0].assignedTo.fullName).toEqual('test1 test1')
     })
 
     // 🟥 TEST FOR SHOWING All TEAMS AND THEIR PROJECTS 🟥
@@ -153,11 +192,51 @@ describe('Test team endpoints', () => {
     })
 
     test('It should delete a team', async () => {
-        // find user by email and create a new token
-        const user = await User.findOne({ email: '1@test.com' })
+        // create a logged in user and a token
+        const user = new User({
+            firstName: 'test3',
+            lastName: 'test3',
+            email: '3@test.com',
+            password: 'testing123',
+            isLoggedIn: true
+        })
+        await user.save()
         const token = await user.generateAuthToken()
+        // create a new team to be deleted
+        await request(app)
+            .post('/teams')
+            .set('Authorization', `Bearer ${token}`)
+            .send({
+                title: 'team3', 
+                description: 'testing team 3'
+            })
         // find team to be deleted
         const team = await Team.findOne({ title: 'team1 updated', description: 'updated testing team 1'})
+        // create a team project
+        await request(app)
+            .post('/projects')
+            .set('Authorization', `Bearer ${token}`)
+            .send({
+                title: 'project2',
+                description: 'testing project 2', 
+                type: 'team', 
+                endDate: '08/01/2023', 
+                team: team._id
+            })
+        const project = await Project.findOne({ title: 'project2', description: 'testing project 2' })
+        console.log(project)
+    
+        // create task assigned to project
+        await request(app)
+            .post(`/projects/${project._id}/tasks`)
+            .set('Authorization', `Bearer ${token}`)
+            .send({
+                title: 'task2',
+                dueDate: '07/08/2023', 
+                project: project._id,
+                assignedTo: user._id
+        })
+        
         // send request with authorization
         const response = await request(app)
             .delete(`/teams/${team._id}`)

@@ -181,31 +181,10 @@ exports.deleteTeam = async (req, res) => {
     try {
         // find team using req.params.teamId and delete
         const team = await Team.findOneAndDelete({ _id: req.params.teamId })
-        // find all team roles associated with the team
-        const teamRoles = await TeamRole.find({ team: team._id })
-        // remove associated team role from each member's projects array
-        teamRoles.forEach(async (role) => {
-            const member = await User.findOne({ _id: role.user })
-            member.teams.splice(member.teams.indexOf(role._id), 1)
-            await member.save()
-        })
-        // delete team roles
-        await TeamRole.deleteMany({ team: team._id })
 
         // find all projects assigned to the team
         const teamProjects = await Project.find({ team: team._id })
         teamProjects.forEach(async (project) => {
-            // find all project roles associated with the project
-            const projectRoles = await ProjectRole.find({ project: project._id })
-            // remove associated project role from each member's projects array
-            projectRoles.forEach(async (role) => {
-                const member = await User.find({ _id: role.user })
-                member.projects.splice(member.projects.indexOf(role._id), 1)
-                await member.save()
-            })
-            // delete project roles
-            await ProjectRole.deleteMany({ project: project._id })
-            
             // find all tasks associated with each project
             const tasks = await Task.find({ project: project._id })
             // remove each associated task from assigned user's tasks array
@@ -216,9 +195,31 @@ exports.deleteTeam = async (req, res) => {
             })
             // delete tasks
             await Task.deleteMany({ project: project._id })
+            // find all project roles associated with the project
+            const projectRoles = await ProjectRole.find({ project: project._id })
+            console.log(projectRoles)
+            // remove associated project role from each member's projects array
+            projectRoles.forEach(async (role) => {
+                const member = await User.find({ _id: role.user })
+                member.projects.splice(member.projects.indexOf(role._id), 1)
+                await member.save()
+            })
+            // delete project roles
+            await ProjectRole.deleteMany({ project: project._id })
         })
         // delete projects
         await Project.deleteMany({ team: team._id })
+
+         // find all team roles associated with the team
+         const teamRoles = await TeamRole.find({ team: team._id })
+         // remove associated team role from each member's projects array
+         teamRoles.forEach(async (role) => {
+             const member = await User.findOne({ _id: role.user })
+             member.teams.splice(member.teams.indexOf(role._id), 1)
+             await member.save()
+         })
+         // delete team roles
+         await TeamRole.deleteMany({ team: team._id })
 
         res.json({ message: `${team.title} deleted` })
     } catch (error) {
@@ -253,10 +254,24 @@ exports.showTeamDetails = async (req, res) => {
  */
 exports.showTeamProjects = async (req, res) => {
     try {
-        // find team using req.params.teamId, then populate the team's projects
-        const team = await Team.findOne({ _id: req.params.teamId }).populate('projects').exec()
-        team.projects.populate('tasks', 'title dueDate assignedTo status')
-        team.projects.tasks.populate('assignedTo', 'firstName lastName fullName')
+        // find team using req.params.teamId
+        const team = await Team.findOne({ _id: req.params.teamId })
+        // populate the team's projects
+        .populate({ 
+            path: 'projects', 
+            // populate project's tasks with title, dueDate, assignedTo, and status
+            populate: { 
+                path: 'tasks', 
+                select: 'title dueDate assignedTo status', 
+                // populate name of person task is assigned to 
+                populate: { 
+                    path: 'assignedTo', 
+                    select: 'firstName lastName fullName' 
+                }
+            }
+        })
+        .exec()
+            
         res.json(team)
     } catch (error) {
         res.status(400).json({ message: error.message })

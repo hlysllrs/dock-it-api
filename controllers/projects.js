@@ -234,11 +234,17 @@ exports.showProject = async (req, res) => {
     try {
         // find project using req.params.projectId
         const project = await Project.findOne({ _id: req.params.projectId })
-        // populate task details
-            .populate('tasks', 'title dueDate assignedTo status')
+            // populate task details
+            .populate({ 
+                path: 'tasks', 
+                select: 'title dueDate assignedTo status', 
+                // populate name of person task is assigned to 
+                populate: { 
+                    path: 'assignedTo', 
+                    select: 'firstName lastName fullName' 
+                }
+            })
             .exec()
-        // populate name of person task is assigned to 
-        project.tasks.populate('assignedTo', 'firstName lastName fullName')
         res.json(project)
     } catch (error) {
         res.status(400).json({ message: error.message })
@@ -253,7 +259,7 @@ exports.showProject = async (req, res) => {
 exports.showPersonalProjects = async (req, res) => {
     try {
         // find all personal projects where user is a member
-        const projects = await Project.find({ members: { contains: req.user.id }, type: 'personal' })
+        const projects = await Project.find({ members: req.user.id, type: 'personal' })
         // populate task details
         .populate('tasks', 'title dueDate status')
         .exec()

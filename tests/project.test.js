@@ -43,10 +43,10 @@ describe('Test project endpoints', () => {
                 title: 'team2', 
                 description: 'testing team 2'
             })
-        // find the newly cresated team
-        const team = await Team.findOne({ title: 'team2', 
-        description: 'testing team 2' })
-
+        // find the newly created team
+        const team = await Team.findOne({ title: 'team2', description: 'testing team 2' })
+        
+        // send request with authorization and project details
         const response = await request(app)
             .post('/projects')
             .set('Authorization', `Bearer ${token}`)
@@ -73,7 +73,8 @@ describe('Test project endpoints', () => {
         const user = await User.findOne({ email: '3@test.com' })
         await user.save()
         const token = await user.generateAuthToken()
-
+       
+        // send request with authorization and project details
         const response = await request(app)
             .post('/projects')
             .set('Authorization', `Bearer ${token}`)
@@ -177,14 +178,65 @@ describe('Test project endpoints', () => {
         expect(response.body.description).toEqual('updated testing project 1')
     })
 
-    // 🟥 TEST FOR SHOWING A PROJECT 🟥
-    test('It should show all a project', async () => {
+    test('It should show a project', async () => {
+        // find user by email and create a new token
+        const user = await User.findOne({ email: '3@test.com' })
+        const token = await user.generateAuthToken()
+        // find project to be shown
+        const project = await Project.findOne({ title: 'project1 updated', description: 'updated testing project 1' })
+        // find team for project is assigned to
+        const team = await Team.findOne({ title: 'team2', description: 'testing team 2'})
+        // create task assigned to project
+        await request(app)
+        .post(`/projects/${project._id}/tasks`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+            title: 'task1',
+            dueDate: '07/08/2023', 
+            project: project._id,
+            assignedTo: user._id
+        })
 
+        // send request with authorization and updated team details
+        const response = await request(app)
+            .get(`/projects/${project._id}`)
+            .set('Authorization', `Bearer ${token}`)
+
+        expect(response.statusCode).toBe(200)
+        expect(response.body.title).toEqual('project1 updated')
+        expect(response.body.description).toEqual('updated testing project 1')
+        expect(response.body.tasks[0].title).toEqual('task1')
+        expect(response.body.tasks[0].status).toEqual('Not Started')
+        expect(response.body.tasks[0].assignedTo.fullName).toEqual(user.fullName)
     })
 
-    // 🟥 TEST FOR SHOWING All OF THE USER'S PERSONAL PROJECTS 🟥
     test('It should show all of the user\'s personal projects', async () => {
-
+         // find user by email and create a new token
+         const user = await User.findOne({ email: '3@test.com' })
+         const token = await user.generateAuthToken()
+         // find project to be shown
+         const project = await Project.findOne({ title: 'project2 personal', description: 'testing project 2' })
+         // create task assigned to project
+         await request(app)
+         .post(`/projects/${project._id}/tasks`)
+         .set('Authorization', `Bearer ${token}`)
+         .send({
+             title: 'task2',
+             dueDate: '07/21/2023', 
+             project: project._id,
+             assignedTo: user._id
+         })
+ 
+         // send request with authorization and updated team details
+         const response = await request(app)
+             .get('/projects')
+             .set('Authorization', `Bearer ${token}`)
+ 
+         expect(response.statusCode).toBe(200)
+         expect(response.body.projects[0].title).toEqual('project2 personal')
+         expect(response.body.projects[0].description).toEqual('testing project 2')
+         expect(response.body.projects[0].tasks[0].title).toEqual('task2')
+         expect(response.body.projects[0].tasks[0].status).toEqual('Not Started')
     })
 
     test('It should delete a project', async () => {

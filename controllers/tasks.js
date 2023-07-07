@@ -50,9 +50,9 @@ exports.createTask = async (req, res) => {
         req.userAssigned.tasks.addToSet({ _id: task._id })
         await req.userAssigned.save()
         // add task to project's tasks array
-        req.project.tasks.addToSet({ _id: task.project })
+        req.project.tasks.addToSet({ _id: task._id })
         await req.project.save()
-        res.json({ task, project: req.project, user: req.userAssigned })
+        res.json({ task, project: req.project, userAssigned: req.userAssigned })
     } catch (error) {
         res.status(400).json({ message: error.message })
     }
@@ -106,9 +106,9 @@ exports.reassignTask = async (req, res) => {
         req.userAssigned.tasks.addToSet({ _id: task._id })
         req.userAssigned.save()
         // update task to be assigned to the new user
-        task.assignedTo = newAssigned._id
-        task.save()
-        res.json({ task, prevAssigned, newAssigned })
+        task.assignedTo = req.userAssigned._id
+        await task.save()
+        res.json({ task, prevAssigned, newAssigned: req.userAssigned })
     } catch (error) {
         res.status(400).json({ message: error.message })
     }
@@ -120,14 +120,14 @@ exports.reassignTask = async (req, res) => {
  * @description updates user assigned to the task specified by req.params.taskId
  * 
  * Request will contain:  
- *  - assignedTo: (required) ObjectId of the new user being assigned to the task  
- *      -- must be a member of the project
+ *  - status: (required) completion status of the task
+ *      -- can be 'Not Started', 'In Progress', or 'Complete'
  */
 exports.updateTaskStatus = async (req, res) => {
     try {
         // find task using req.params.taskId
         const task = await Task.findOne({ _id: req.params.taskId })
-        if(task.assignedTo !== req.user._id) {
+        if(!req.user.tasks.includes(task._id)) {
             throw new Error(`user not authorized to update status of ${task.title}`)
         }
         // update tasks's status
