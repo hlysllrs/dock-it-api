@@ -1,4 +1,4 @@
-# Dock it - a productivity API
+# Dock it - a productivity app
 
 Bring your projects to shore.   
 *or*   
@@ -17,11 +17,11 @@ Dock it is a project management app for both inidviduals and teams. With the Doc
     - [Setup](#setup)
 - [Usage](#usage)
     - [Starting the App in Dev Mode](#starting-the-app-in-dev-mode)
+    - [Starting the App Without Dev Mode](#starting-the-app-without-dev-mode)
     - [Making API Requests](#making-api-requests)
     - [Running Automated Testing](#running-automated-testing)
         - [Unit Testing](#unit-testing)
         - [Load Testing](#load-testing)
-    - [Starting the App Without Dev Mode](#starting-the-app-without-dev-mode)
 - [ER Diagrams](#er-diagram)
 - [Wireframe Mockups](#wireframe-mockups)
     - [Personal Projects Dashboard](#personal-projects-dashboard)
@@ -77,11 +77,11 @@ After installation, please follow the below steps to ensure proper setup for usi
     PORT=3000
     SECRET_KEY=<insert-secret-code-here>
     ```
-    *Please note: The information inside angled brackets `< >` should be replaced with your information. The final MongoDB connection string and secret code will not contain any angled brackets.*
+    <sup>*Please note: The information inside angled brackets `< >` should be replaced with your information. The final MongoDB connection string and secret code will not contain any angled brackets.*</sup>
 ## Usage
 
 ### Starting the App in Dev Mode
-To start the app in development mode, enter the following command into the VS Code Terminal.
+To start the app in development mode, enter the following command into the VS Code Terminal:
 ```
 npm run dev
 ```
@@ -91,12 +91,280 @@ Taking a trip to Port 3000!
 All aboard the Mongo Express!
 ```
 
+### Starting the App Without Dev Mode
+To start the app without dev mode, enter the following command into the VS Code Terminal:
+```
+npm start
+```
+Once the server and database connections are made, the terminal should read: 
+```
+Taking a trip to Port 3000!
+All aboard the Mongo Express!
+```
+
 ### Making API Requests
-How to make an api request in Postman (i.e what port, what url etc)
+Once the server is running successfully, API requests can be made using Postman.  
+In Postman, create a new workspace to begin making HTTP requests. In a new request tab, enter the the URL `http://localhost:3000`. This will be the start of the URL for all of the possible requests listed below. When making requests, add on the endpoint listed for the request at the end of the URL: 
+```
+http://localhost:3000/users
+```
+<sup>*Please note: If you entered a different port number in you `.env` file, replace 3000 in the URL with the port number entered.*</sup>
+
+For each request below, an HTTP request type is llisted. Please make sure to select the indicated request type using the dropdown menu in Postman before sending the request. 
+
+All request data must be sent using JSON format. To do so, sleect the "Body" tab under the URL bar, and check the "RAW" radio button. Then, select "JSON" from the drop down menu on to the right of the radio buttons. 
+
+#### Create a User
+**HTTP request type**: `POST`  
+**Endpoint**: `/users`  
+**Request data**: 
+- firstName: (*required*) new user's first name
+- lastName: (*required*) new user's last name
+- email: (*required*) new user's email address
+- password: (*required*) new user's password - *must be at least 8 characters*
+
+In Postman, this request will look like: 
+![Postman Example - Create a User](markdown-assets/postman-example-request.png)
+Press the "Send" button to send the request.
+
+#### Login a User
+**HTTP request type**: `POST`  
+**Endpoint**: `/users/login`  
+**Request data**:   
+- email: (*required*) user's email address
+- password: (*required*) user's password
+
+*Please note*: Once a user is loggd in, a token will be returned with the login request response. All requests after this point will require the user to be logged in and have authorization.  
+To send a request with user authorization, first copy the token returned in login request's response.
+![Copy token from user login request's response](markdown-assets/user-login-response.png)
+Then, in the "Authorization" tab under the URL bar, select "Bearer Token" from the dropdown menu and paste the copied token into the "Token" text box.
+![Set Bearer Token authorization](markdown-assets/set-bearer-token.png)
+
+
+#### Logout a User
+**HTTP request type**: `POST`  
+**Endpoint**: `/users/logout`  
+**Request data**: 
+- none
+
+#### Update a User Information
+**HTTP request type**: `PUT`  
+**Endpoint**: `/users/:userId`
+**Request data**: 
+- firstName: (*required*) user's first name
+- lastName: (*required*) user's last name
+- email: (*required*) user's email address
+- password: (*required*) user's password - must be at least 8 characters
+
+*Please note*: `:userId` will be replaced with the `_id` of the user
+![user id](markdown-assets/user-id.png) 
+
+#### Show a User's Information
+**HTTP request type**: `GET`   
+**Endpoint**: `/users/:userId`   
+**Request data**: 
+- none
+
+#### Delete a User
+**HTTP request type**: `DELETE`   
+**Endpoint**: `/users/:userId`   
+**Request data**: 
+- none
+
+*Please note*: Deleting a user also deletes all of their personal projects and tasks. It also removes the user reference from any teams, team projects, or tasks they were assigned to.
+
+#### Create a Team
+**HTTP request type**: `POST`  
+**Endpoint**: `/teams`  
+**Request data**: 
+- title: (*required*) title of the team
+- description: description of the team
+
+*Please note*: The user will automatically be assigned to an admin role for the team created.
+
+#### Add a Member to the Team
+**HTTP request type**: `PUT`  
+**Endpoint**: `/teams/add/:teamId`  
+**Request data**: 
+- member: (*required*) id of the user being added as a member to the team
+- role: (*required*) desired role for the new member  
+    - must be either 'admin' or 'contributor'
+
+*Please note*: The user must be a team admin to perform this request.
+
+#### Remove a Member from the Team
+**HTTP request type**: `PUT`  
+**Endpoint**: `/teams/remove/:teamId`  
+**Request data**: 
+- member: (*required*) id of the user being removed as a member of the team
+
+*Please note*: The user must be a team admin to perform this request.
+
+#### Update a Team's Information
+**HTTP request type**: `PUT`  
+**Endpoint**: `/teams/:teamId`  
+**Request data**: 
+- title: title of the team
+- description: description of the team
+
+*Please note*: The user must be a team admin to perform this request.
+
+#### Delete a Team
+**HTTP request type**: `DELETE`  
+**Endpoint**: `/teams/:teamId`  
+**Request data**: 
+- none
+
+*Please note*: The user must be a team admin to perform this request.
+*Please note*: Deleting a team also removes the team reference from any users it was assigned to and deletes associated projects, and tasks for those projects.
+
+#### Show a Team's Information
+**HTTP request type**: `GET`  
+**Endpoint**: `/teams/:teamId`  
+**Request data**: 
+- none
+
+*Please note*: The user must be a team member to perform this request.
+
+#### Create a Project 
+**HTTP request type**: `POST`  
+**Endpoint**: `/projects`  
+**Request data**: 
+- title: (*required*) title of the project
+- description: description of the project
+- type: (*required*) type of project  
+    - must be either 'personal' or 'team'
+- startDate: start date of the project  
+    - defaults to date the project was created
+- endDate: (*required*) end date of the project
+- team: id of the team the project is assigned to (only if project type is 'team')
+
+*Please note*: The user will automatically be assigned to an admin role for the project created.
+
+#### Add a Member to a Team Project
+**HTTP request type**: `PUT`  
+**Endpoint**: `/projects/add/:projectId`  
+**Request data**: 
+- member: (*required*) id of the user being added as a member to the project
+- role: (*required*) desired role for the new member  
+    - must be either 'admin' or 'contributor'
+
+*Please note*: The user must be a project admin to perform this request.
+
+#### Remove a Member from a Team Project
+**HTTP request type**: `PUT`  
+**Endpoint**: `/projects/remove/:projectId`  
+**Request data**: 
+- member: (*required*) id of the user being removed as a member of the project
+
+*Please note*: The user must be a project admin to perform this request.
+
+#### Update a Project's Information
+**HTTP request type**: `PUT`  
+**Endpoint**: `/projects/:projectId`  
+**Request data**: 
+- title: title of the project
+- description: description of the project
+- startDate: start date of the project
+- endDate: end date of the project
+
+*Please note*: The user must be a project admin to perform this request.
+
+#### Delete a Project
+**HTTP request type**: `DELETE`  
+**Endpoint**: `/projects/:projectId`  
+**Request data**: 
+- none
+
+*Please note*: The user must be a project admin to perform this request.
+*Please note*: Deleting a project also removes the project reference from any teams or users it was assigned to and deletes associated tasks.
+
+#### Show a Project
+**HTTP request type**: `GET`  
+**Endpoint**: `/projects/:projectId`  
+**Request data**: 
+- none
+
+*Please note*: The user must be a project member to perform this request.
+
+#### Show all of a Team's Projects
+**HTTP request type**: `GET`  
+**Endpoint**: `/teams/:teamId/projects`  
+**Request data**: 
+- none
+
+*Please note*: The user must be a team member to perform this request.
+
+#### Show all of the User's Personal Projects
+**HTTP request type**: `GET`  
+**Endpoint**: `/projects`  
+**Request data**: 
+- none
+
+#### Show all of the User's Teams and Team Projects
+**HTTP request type**: `GET`  
+**Endpoint**: `/teams`  
+**Request data**: 
+- none
+
+*Please note*: The user must be a team member to perform this request.
+
+#### Create a Task
+**HTTP request type**: `POST`  
+**Endpoint**: `/projects/:projectId/tasks`  
+**Request data**: 
+- title: (*required*) title of the task  
+- dueDate: due date of the task    
+    - defaults to date the task was created
+- project: (*required*) id of the project the task is assigned to  
+- assignedTo: id of the user the task is assigned to  
+    - assinged user must be a member of the project  
+- status: current status of the task  
+    - defaults to 'Not started'
+    - must be either 'Not Started', 'In Progress', or 'Complete'
+
+*Please note*: The user must be a project admin to perform this request.
+
+#### Reassign a Task
+**HTTP request type**: `PUT`  
+**Endpoint**: `/projects/:projectId/tasks/reassign/:taskId`  
+**Request data**: 
+- assignedTo: id of the user the task is assigned to  
+    - assinged user must be a member of the project
+
+*Please note*: The user must be a project admin to perform this request.
+
+#### Update a Task's Details
+**HTTP request type**: `PUT`  
+**Endpoint**: `/projects/:projectId/tasks/:taskId`  
+**Request data**: 
+- title: title of the task
+- dueDate: due date of the task
+- completion status of the task
+    - must be either 'Not Started', 'In Progress', or 'Complete'
+
+*Please note*: The user must be a project admin to perform this request.
+
+#### Update a Task's Status
+**HTTP request type**: `PUT`  
+**Endpoint**: `/projects/:projectId/tasks/status/:taskId`  
+**Request data**: 
+- completion status of the task
+    - must be either 'Not Started', 'In Progress', or 'Complete'
+
+*Please note*: The user must be the person assigned to the task to perform this request.
+
+#### Delete a Task
+**HTTP request type**: `DELETE`  
+**Endpoint**: `/projects/:projectId/tasks/:taskId`  
+**Request data**: 
+- none
+
+*Please note*: The user must be a project admin to perform this request.
 
 ### Running Automated Testing
 #### Unit Testing
-To run automated unit testing, enter the following command into the VS Code Terminal.
+To run automated unit testing, enter the following command into the VS Code Terminal:
 ```
 npm run test
 ```
@@ -105,17 +373,6 @@ npm run test
 To run automated load testing, first you will need to [start the app in dev mode](#starting-the-app-in-dev-mode). Then, in your computer's terminal application (*not the VS Code terminal*), navigate to the app's cloned repository and run the following command: 
 ```
 npm run load
-```
-
-### Starting the App Without Dev Mode
-To start the app without dev mode, enter the following command into the VS Code Terminal.
-```
-npm start
-```
-Once the server and database connections are made, the terminal should read: 
-```
-Taking a trip to Port 3000!
-All aboard the Mongo Express!
 ```
 
 

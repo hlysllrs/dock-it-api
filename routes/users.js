@@ -28,7 +28,7 @@ router.put('/:userId', userCtrl.auth, userCtrl.updateUser)
 
 /**
  * Route for creating a user account
- * - HTTP request type: GET
+ * - HTTP request type: POST
  * - endpoint: /users/
  * - callbacks:  
  *      -- userctrl.createUser - creates a user account

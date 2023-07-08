@@ -66,6 +66,8 @@ exports.createTask = async (req, res) => {
  * Request may contain: 
  *  - title: title of the task
  *  - dueDate: due date of the task
+ *  - status: completion status of the task
+ *      -- can be 'Not Started', 'In Progress', or 'Complete'
  * 
  * For making changed to the task's status, please use the {@linkcode updateTaskStatus} method provided
  * For changing the user the task is assigned to, please use the {@linkcode reassignTask} method provided
