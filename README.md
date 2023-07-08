@@ -155,7 +155,7 @@ HTTP request type: `POST`
 Endpoint: `/users/logout`  
 Request data: none
 
-#### Update a User Information
+#### Update a User's Information
 HTTP request type: `PUT`  
 Endpoint: `/users/:userId`
 Request data: 
@@ -221,7 +221,7 @@ HTTP request type: `DELETE`
 Endpoint: `/teams/:teamId`  
 Request data: none
 
-<sup>*NOTE*: The user must be a team admin to perform this request.</sup>
+<sup>*NOTE*: The user must be a team admin to perform this request.</sup>   
 <sup>*NOTE*: Deleting a team also removes the team reference from any users it was assigned to and deletes associated projects, and tasks for those projects.</sup>
 
 #### Show a Team's Information
@@ -244,7 +244,7 @@ Request data:
 - endDate: (*required*) end date of the project
 - team: id of the team the project is assigned to (only if project type is 'team')
 
-<sup>*NOTE*: For team projects, the user must be a team admin to perform this request.</sup>
+<sup>*NOTE*: For team projects, the user must be a team admin to perform this request.</sup>  
 <sup>*NOTE*: The user will automatically be assigned to an admin role for the project created.</sup>
 
 #### Add a Member to a Team Project
@@ -281,7 +281,7 @@ HTTP request type: `DELETE`
 Endpoint: `/projects/:projectId`  
 Request data: none
 
-<sup>*NOTE*: The user must be a project admin to perform this request.</sup>
+<sup>*NOTE*: The user must be a project admin to perform this request.</sup>  
 <sup>*NOTE*: Deleting a project also removes the project reference from any teams or users it was assigned to and deletes associated tasks.</sup>
 
 #### Show a Project
@@ -321,7 +321,7 @@ Request data:
 - assignedTo: id of the user the task is assigned to  
     - assinged user must be a member of the project  
 - status: current status of the task  
-    - defaults to 'Not started'
+    - defaults to 'Not Started'
     - must be either 'Not Started', 'In Progress', or 'Complete'
 
 <sup>*NOTE*: The user must be a project admin to perform this request.</sup>
