@@ -157,7 +157,7 @@ Request data: none
 
 #### Update a User's Information
 HTTP request type: `PUT`  
-Endpoint: `/users/:userId`
+Endpoint: `/users/:userId`  
 Request data: 
 - firstName: (*required*) user's first name
 - lastName: (*required*) user's last name
