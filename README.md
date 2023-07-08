@@ -64,12 +64,12 @@ The following are programs are also recommended, but not required. Alternatives 
     ```
     git clone git@github.com:hlysllrs/unit-2-project.git
     ```
-    
-4. Enter the command `code .` to open the newly cloned directory in VS Code.
+4. Change directories so the newly cloned directory is your current working directory. 
+5. Enter the command `code .` to open the newly cloned directory in VS Code.
 
 ### Setup
 After installation, please follow the below steps to ensure proper setup for using the Dock it API.
-1. Open the VS Code terminal and enter the command `npm install -y` to install the required packages. 
+1. Open the VS Code terminal and enter the command `npm install` to install the required packages. 
 2. Create a `.env` file containing the following variables: 
     - `MONGO_URI` - a MongoDB connection string for connecting to your database
     - `PORT` - the designated port number to be used for server connection
