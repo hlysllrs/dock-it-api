@@ -39,13 +39,3 @@ After installation, please follow the below steps to ensure proper setup for usi
     PORT=3000
     SECRET_KEY=<insert-secret-code-here>
     ```
-
-## Running the Application
-- clone repository
-- must have node.js installed
-- must have nodemon installed to use dev mode
-- must create .env file containing the below information: 
-    - `MONGO_URI` with MogngoDB connection string to connect to your database
-    - `PORT` with designated port for server connection
-    - `SECREY_KEY` with secret code for decoding JWTs and passwords
-- install required packages by running `npm i` in teh terminal
