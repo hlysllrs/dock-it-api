@@ -1,10 +1,10 @@
-# Dock it - a productivity app
+# Dock it - a productivity API
 
 Bring your projects to shore.   
 *or*   
 Power up your projects.  
 
-Dock it is a project management app for both inidviduals and teams. With the Dock it API, users have the ability to: 
+Dock it is a project management API for both inidviduals and teams. With the Dock it API, users have the ability to: 
 - create and manage personal projects 
 - create and manage teams and team projects
 - create and manage project tasks
